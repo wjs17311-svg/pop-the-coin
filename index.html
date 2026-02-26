@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>POP THE COIN!</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <style>
+        @font-face {
+            font-family: 'Runtoe';
+            src: url('Runtoe.otf') format('opentype');
+        }
+
+        /* 💡 모바일 텍스트 드래그 및 길게 누르기(우클릭/복사) 메뉴 완벽 차단 */
+        * {
+            -webkit-touch-callout: none; 
+            -webkit-user-select: none;   
+            -khtml-user-select: none;    
+            -moz-user-select: none;      
+            -ms-user-select: none;       
+            user-select: none;           
+        }
+
+        body { margin: 0; overflow: hidden; background-color: #000; touch-action: none; }
+        
+        #game-container {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #0b0c10;
+            background-image: url('SKY 2.png');
+            background-size: cover;
+            background-position: center;
+            overflow: hidden;
+        }
+
+        #ui-container { position: absolute; top: 20px; left: 20px; z-index: 10; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        #score-box { display: flex; align-items: center; gap: 15px; }
+        #score-box img { height: 100px; image-rendering: pixelated; }
+        #score { color: #e6c55c; font-family: 'Runtoe', 'Press Start 2P', sans-serif; font-size: 56px; text-shadow: 2px 2px 0px #000000; }
+
+        #gauge-container { width: 0px; height: 0px; background-color: rgba(255, 255, 255, 0.2); border: none; border-radius: 8px; overflow: hidden; box-shadow: none; margin-top: -15px; }
+        #gauge-fill { width: 0%; height: 100%; background-color: #00ffff; box-shadow: 0 0 10px #00ffff; transition: width 0.2s ease-out; }
+
+        #controls-img { position: absolute; bottom: -80px; right: -100px; width: 600px; height: auto; z-index: 10; display: none; pointer-events: none; filter: drop-shadow(3px 3px 0px rgba(0,0,0,0.8)); }
+
+        .center-msg { position: absolute; top: 50%; left: 50%; text-align: center; color: #fff; font-family: 'Press Start 2P', monospace; transform: translate(-50%, -50%); z-index: 10; }
+        #gameOverMsg { display: none; white-space: nowrap; }
+        
+        @keyframes bonusBlink {
+            0% { transform: translate(-50%, -50%) scale(1); text-shadow: 4px 4px 0px #ff00ff, 0 0 20px #ff00ff; }
+            50% { transform: translate(-50%, -50%) scale(1.1); text-shadow: -4px -4px 0px #00ffff, 0 0 30px #00ffff; color: #fff;}
+            100% { transform: translate(-50%, -50%) scale(1); text-shadow: 4px 4px 0px #ff00ff, 0 0 20px #ff00ff; }
+        }
+        
+        #bonusMsg { display: none; color: #ffcc00; font-family: 'Runtoe', sans-serif; font-size: 70px; position: absolute; top: 30%; left: 50%; text-align: center; z-index: 20; animation: bonusBlink 0.5s infinite; }
+        #startMsg { display: none; color: #ffcc00; font-family: 'Runtoe', sans-serif; font-size: 60px; text-shadow: 2px 2px 0px #000, 0 0 20px #ff00ff; animation: promptBlink 0.5s infinite; z-index: 50; width: 100%; position: absolute; top: 40%; left: 50%; text-align: center; transform: translate(-50%, -50%); }
+
+        @keyframes comboPop {
+            0% { transform: scale(1) rotate(-5deg); text-shadow: 2px 2px 0px #000, 0 0 10px #ff00ff; }
+            50% { transform: scale(1.3) rotate(-5deg); text-shadow: 4px 4px 0px #000, 0 0 30px #00ffff; }
+            100% { transform: scale(1) rotate(-5deg); text-shadow: 2px 2px 0px #000, 0 0 10px #ff00ff; }
+        }
+        
+        #comboMsg { display: none; position: absolute; top: 25%; right: 10%; color: #ffff00; font-family: 'Runtoe', 'Press Start 2P', sans-serif; font-size: 60px; z-index: 40; transform: rotate(-5deg); }
+
+        #speed-effect { position: absolute; top: 0; left: 0; width: 100%; height: 100%; box-shadow: inset 0 0 150px 20px rgba(0, 255, 255, 0); transition: box-shadow 0.15s ease-out; pointer-events: none; z-index: 6; }
+        #crt-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%); background-size: 100% 4px; opacity: 0.6; pointer-events: none; z-index: 100; }
+
+        #loadingScreen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; z-index: 30; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #titleScreen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, rgba(0,0,0,0) 30%, rgba(11,12,16,0.85) 100%); z-index: 20; display: none; flex-direction: column; justify-content: center; align-items: center; }
+
+        #charSelectScreen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; z-index: 25; display: none; flex-direction: column; justify-content: center; align-items: center; }
+        .char-grid { display: flex; gap: 15px; justify-content: center; max-width: 1200px; margin-top: 20px; flex-wrap: nowrap; overflow-x: auto; }
+        .char-card { width: 120px; height: 150px; border: 4px solid transparent; background: rgba(0,0,0,0.7); color: #fff; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; font-family: 'Press Start 2P', monospace; font-size: 10px; cursor: pointer; text-align: center; line-height: 1.5; transition: all 0.2s; box-shadow: 4px 4px 0px #000; flex-shrink: 0; opacity: 0.4; box-sizing: border-box; padding-top: 10px; }
+        .char-card img { width: 80px; height: 80px; object-fit: cover; margin-bottom: 8px; border: 2px solid #fff; background-color: #222; }
+        .char-card.focused { border-color: #00ffff; opacity: 1.0; transform: translateY(-10px); }
+        .char-card:hover { border-color: #ff00ff; }
+
+        #tutorial-overlay { position: absolute; top:0; left:0; width:100%; height:100%; z-index: 100; display: none; pointer-events: none; }
+        .tut-half { position: absolute; top:0; height:100%; width:50%; background: rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; flex-direction:column; opacity: 0; transition: opacity 0.3s; }
+        #tut-left { left: 0; }
+        #tut-right { right: 0; }
+        #tut-full { left: 0; width: 100%; background: rgba(0,0,0,0.7); }
+        .tut-text { color: #fff; font-family: 'Runtoe', sans-serif; font-size: 40px; text-shadow: 2px 2px 0px #ff00ff; text-align: center; animation: promptBlink 1s infinite; pointer-events: none;}
+
+        #mobileCharSelectUI { position: absolute; bottom: 24%; left: 50%; transform: translateX(-50%); display: none; width: 100%; justify-content: center; gap: 40px; align-items: center; z-index: 30; }
+        .m-btn { color: #ffff00; font-family: 'Runtoe', sans-serif; font-size: 50px; text-shadow: 2px 2px 0px #ff00ff; cursor: pointer; padding: 15px; user-select: none; opacity: 0; }
+        #pcCharSelectUI { position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%); color: #ffff00; font-family: 'Runtoe', sans-serif; font-size: 40px; text-shadow: 2px 2px 0px #ff00ff; animation: promptBlink 1s infinite; text-align: center; z-index: 10; width: 100%; }
+
+        #tapToStart { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-family: 'Runtoe', sans-serif; font-size: 50px; text-shadow: 2px 2px 0px #ff00ff; z-index: 25; animation: promptBlink 1s infinite; white-space: nowrap; pointer-events: none;}
+
+        /* 💡 모바일 전용 JUMP 버튼 디자인 */
+        #mobile-jump-btn {
+            display: none;
+            position: absolute;
+            bottom: 0%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px; 
+            height: 120px; 
+            background-image: url('jump.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: transparent; 
+            border: none; 
+            z-index: 110;
+            user-select: none;
+            color: transparent; 
+            text-shadow: none;
+        }
+        #mobile-jump-btn:active { 
+            transform: translateX(-50%) scale(0.9); 
+            opacity: 0.8; 
+        }
+
+        /* 📱 모바일 전용 UI & 폰트 크기 조정 */
+        body.mobile-mode #score { font-size: 36px; }
+        body.mobile-mode #score-box img { height: 60px; }
+        body.mobile-mode #bonusMsg { font-size: 45px; width: 100%; top: 35%; }
+        body.mobile-mode #startMsg { font-size: 40px; }
+        body.mobile-mode #comboMsg { font-size: 40px; top: 15%; right: 5%; }
+        body.mobile-mode .tut-text { font-size: 26px; }
+        body.mobile-mode .m-btn { font-size: 35px; padding: 10px; }
+        body.mobile-mode #tapToStart { font-size: 0px; } 
+        body.mobile-mode #bonusVideoPrompt { font-size: 24px; bottom: 20%; }
+        body.mobile-mode #gameOverMsg { font-size: 18px; }
+        /* 💡 단순 깜빡임 효과 추가 */
+        @keyframes simpleBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        @keyframes promptBlink {
+            0% { opacity: 1; text-shadow: 2px 2px 0px #000, 0 0 10px #ff00ff; }
+            50% { opacity: 0.5; text-shadow: 2px 2px 0px #000, 0 0 20px #00ffff; }
+            100% { opacity: 1; text-shadow: 2px 2px 0px #000, 0 0 10px #ff00ff; }
+        }
+    </style>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+</head>
+<body>
+    <audio id="bgmAudio" src="bgm.mp3" loop preload="auto"></audio>
+    <audio id="coinAudio" src="coin sound.mp3" preload="auto"></audio>
+    <audio id="gameOverAudio" src="game over.mp3" preload="auto"></audio>
+    <audio id="selectAudio" src="SELECT sound.mp3" preload="auto"></audio>
+    <audio id="cheerAudio" src="CHEER.mp3" preload="auto"></audio>
+    <audio id="ouchAudio" src="ouch.mp3" preload="auto"></audio>
+
+    <div id="game-container">
+        <div id="ui-container">
+            <div id="score-box">
+                <img src="SCORE.png" alt="SCORE"> <span id="score">0</span>
+            </div>
+            <div id="gauge-container"><div id="gauge-fill"></div></div>
+        </div>
+
+        <img id="controls-img" src="KEY UI.png" alt="Game UI">
+        
+        <div id="gameOverMsg" class="center-msg">
+            <img src="WASTED.png" alt="WASTED" style="width: 0px; display: block; margin-left: auto; margin-right: auto;">
+            <span id="gameover-subtext" style="font-size: 0px; color:#fff;">PRESS 'R' TO SELECT CHARACTER</span>
+        </div>
+        
+        <div id="bonusMsg">POP THAT BODY LIKE!</div>
+        <div id="startMsg">GET COINS TO POP!</div>
+        <div id="comboMsg">2COMBO!</div>
+        
+        <video id="wastedVideo" src="WASTED.mp4" playsinline muted style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 90; display: none;"></video>
+        <video id="bonusVideo" muted playsinline style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 85; display: none;"></video>
+        
+        <div id="bonusVideoPrompt" style="position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%); color: #fff; font-family: 'Runtoe', sans-serif; font-size: 38px; z-index: 86; display: none; animation: simpleBlink 1s infinite; text-align: center; text-shadow: 2px 2px 0px #000, 0 0 10px #ffffff;">PRESS SPACE TO RESUME</div>
+
+        <div id="loadingScreen">
+            <video id="loadingVideo" src="LOADING.mp4" autoplay loop muted playsinline style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; background-color: #000;"></video>
+        </div>
+
+        <div id="titleScreen">
+            <video id="titleVideo" src="forintro.mp4" autoplay loop muted playsinline style="width: 115%; max-width: 2000px; height: auto; filter: drop-shadow(5px 5px 0px #000);"></video>
+            <div id="tapToStart">TAP TO START</div>
+        </div>
+
+        <div id="charSelectScreen">
+            <img src="SELECT.png" alt="Select Character" style="display: none;">
+            <div class="char-grid" style="display: none;">
+                <div class="char-card focused" data-char="0"></div>
+                <div class="char-card" data-char="1"></div>
+                <div class="char-card" data-char="2"></div>
+                <div class="char-card" data-char="3"></div>
+                <div class="char-card" data-char="4"></div>
+                <div class="char-card" data-char="5"></div>
+                <div class="char-card" data-char="6"></div>
+            </div>
+            
+            <div id="pcCharSelectUI">&lt;- -&gt; TO CHOOSE CHARACTER!</div>
+            <div id="mobileCharSelectUI">
+                <div class="m-btn" id="m-btn-left">&lt;-</div>
+                <div class="m-btn" id="m-btn-go">GO!</div>
+                <div class="m-btn" id="m-btn-right">-&gt;</div>
+            </div>
+        </div>
+
+        <div id="tutorial-overlay">
+            <div class="tut-half" id="tut-left"><span class="tut-text">&lt;- TAP TO MOVE!</span></div>
+            <div class="tut-half" id="tut-right"><span class="tut-text">-&gt; TAP TO MOVE!</span></div>
+            <div class="tut-half" id="tut-full"><span class="tut-text">TAP JUMP BUTTON!</span></div>
+        </div>
+
+        <div id="mobile-jump-btn">JUMP</div>
+
+        <div id="speed-effect"></div>
+        <div id="crt-overlay"></div>
+    </div>
+
+<script>
+    document.addEventListener('contextmenu', event => event.preventDefault());
+
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+        document.body.classList.add('mobile-mode');
+    }
+
+    const container = document.getElementById('game-container');
+    let targetAspect = 4 / 3;
+
+    const bgmAudio = document.getElementById('bgmAudio');
+    const coinAudio = document.getElementById('coinAudio');
+    const gameOverAudio = document.getElementById('gameOverAudio');
+    const cheerAudio = document.getElementById('cheerAudio');
+    const ouchAudio = document.getElementById('ouchAudio');
+
+    // 💡 1. 동전 사운드 풀 (딜레이 방지)
+    const coinAudioPool = [];
+    const COIN_POOL_SIZE = 5; 
+    for (let i = 0; i < COIN_POOL_SIZE; i++) {
+        const audio = new Audio('coin sound.mp3');
+        audio.preload = 'auto';
+        coinAudioPool.push(audio);
+    }
+    let coinAudioIndex = 0;
+
+    function playCoinSound() {
+        const audio = coinAudioPool[coinAudioIndex];
+        audio.currentTime = 0;
+        audio.play().catch(e => {});
+        coinAudioIndex = (coinAudioIndex + 1) % COIN_POOL_SIZE;
+    }
+
+    // 💡 2. 선택음(SELECT sound) 다중 생성 풀 (딜레이 방지)
+    const selectAudioPool = [];
+    const SELECT_POOL_SIZE = 3; 
+    for (let i = 0; i < SELECT_POOL_SIZE; i++) {
+        const audio = new Audio('SELECT sound.mp3');
+        audio.preload = 'auto';
+        selectAudioPool.push(audio);
+    }
+    let selectAudioIndex = 0;
+
+    function playSelectSound() {
+        const audio = selectAudioPool[selectAudioIndex];
+        audio.currentTime = 0;
+        audio.play().catch(e => {});
+        selectAudioIndex = (selectAudioIndex + 1) % SELECT_POOL_SIZE;
+    }
+
+    // 💡 3. 캐릭터 비디오 7개 미리 로드 풀 (검은 화면 및 로딩 딜레이 0초)
+    const charNames = ['YUSEOP', 'HYUNJUN', 'JUNPYO', 'LIN', 'PAN', 'MIRAKU', 'GIHYUN'];
+    const previewVideos = [];
+    const charSelectScreen = document.getElementById('charSelectScreen');
+    const videoSuffix = isMobile ? '_mobile.mp4' : '.mp4';
+
+    for (let i = 0; i < charNames.length; i++) {
+        const vid = document.createElement('video');
+        vid.src = charNames[i] + videoSuffix;
+        vid.autoplay = true;
+        vid.loop = true;
+        vid.muted = true;
+        vid.playsInline = true;
+        vid.style.position = 'absolute';
+        vid.style.top = '0';
+        vid.style.left = '0';
+        vid.style.width = '100%';
+        vid.style.height = '100%';
+        vid.style.objectFit = 'cover';
+        vid.style.zIndex = '0';
+        vid.style.backgroundColor = '#000';
+        
+        // 처음에 0번(YUSEOP)만 보이게 하고 나머지는 투명하게 숨김
+        vid.style.opacity = i === 0 ? '1' : '0'; 
+        vid.style.transition = 'opacity 0.2s ease'; // 아주 부드러운 전환 효과
+        
+        // UI 뒤쪽에 비디오 배치
+        charSelectScreen.insertBefore(vid, charSelectScreen.firstChild);
+        previewVideos.push(vid);
+    }
+
+    // 백그라운드 진입 시 오디오 제어
+    document.addEventListener("visibilitychange", function() {
+        if (document.hidden) {
+            if (!bgmAudio.paused) bgmAudio.pause();
+            if (!gameOverAudio.paused) gameOverAudio.pause();
+        } else {
+            if (gameState === 'playing' || gameState === 'charSelect' || gameState === 'title') {
+                bgmAudio.play().catch(e => {});
+            }
+        }
+    });
+
+    if (isMobile) {
+        document.getElementById('titleVideo').src = 'forintro_mobile.mp4';
+        document.getElementById('wastedVideo').src = 'WASTED_mobile.mp4';
+        document.getElementById('loadingVideo').src = 'LOADING_mobile.mp4';
+        document.getElementById('tapToStart').style.display = 'block';
+        document.getElementById('pcCharSelectUI').style.display = 'none';
+        document.getElementById('mobileCharSelectUI').style.display = 'flex';
+        document.getElementById('gameover-subtext').innerText = "TAP TO SELECT CHARACTER";
+        document.getElementById('bonusVideoPrompt').innerText = "TAP TO RESUME";
+    }
+
+    function resizeGame() {
+        let w = window.innerWidth;
+        let h = window.innerHeight;
+
+        targetAspect = isMobile ? (w / h) : (4 / 3);
+
+        if (!isMobile) {
+            let currentAspect = w / h;
+            if (currentAspect > targetAspect) {
+                w = h * targetAspect;
+            } else {
+                h = w / targetAspect;
+            }
+        }
+
+        container.style.width = w + 'px';
+        container.style.height = h + 'px';
+
+        if (camera) {
+            camera.aspect = targetAspect;
+            camera.updateProjectionMatrix();
+        }
+        if (renderer) {
+            renderer.setSize(w, h);
+        }
+        if (typeof composer !== 'undefined') {
+            composer.setSize(w, h);
+        }
+    }
+
+    const BONUS_MAP_SCALE = 0.05;       
+    const BONUS_MAP_OFFSET_Y = -1;     
+    const BONUS_MAP_OFFSET_X = 0;       
+    const MANUAL_BONUS_LENGTH = -100;    
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0b0c10, 0.015); 
+
+    const camera = new THREE.PerspectiveCamera(100, targetAspect, 0.1, 1000);
+    const speedEffectUI = document.getElementById('speed-effect');
+
+    const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+    renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 1.0) : 0.6); 
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.9; 
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.setClearColor(0x000000, 0); 
+    
+    container.appendChild(renderer.domElement);
+
+    const renderScene = new THREE.RenderPass( scene, camera );
+    const bloomPass = new THREE.UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 1.5, 0.4, 0.85 );
+    bloomPass.threshold = 0.15; 
+    bloomPass.strength = isMobile ? 0.05 : 0.1; 
+    bloomPass.radius = 0.6;     
+
+    const composer = new THREE.EffectComposer( renderer );
+    composer.addPass( renderScene );
+    composer.addPass( bloomPass );
+
+    resizeGame();
+    window.addEventListener('resize', resizeGame);
+
+    const ambientLight = new THREE.AmbientLight(0x8899aa, 0.5); 
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0x99bbff, 0.7); 
+    dirLight.position.set(5, 20, 10);
+    scene.add(dirLight);
+
+    const playerLight = new THREE.PointLight(0xffddaa, 0.6, 20); 
+    scene.add(playerLight);
+
+    let availableBonusVideos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+
+    let gameState = 'loading'; 
+    let introTimer = 0;            
+    const introDuration = 2.5;    
+
+    let velocityY = 0;
+    let isJumping = false;
+    
+    const JUMP_SPEED = 21.0; 
+    const JUMP_GRAVITY = -55.0; 
+    
+    let score = 0;
+    let comboCount = 0; 
+    let bonusGaugeScore = 0; 
+    const BONUS_THRESHOLD = 100; 
+
+    let isBonusRound = false;
+    let bonusTimer = 0;
+    let autoScoreTimer = 0; 
+    
+    let absorbTimer = 0;
+    let savedSpeed = 0;
+    
+    const normalSpeed = 0.16; 
+    let currentSpeed = normalSpeed; 
+    let spikeWallSpeed = 0.157; 
+    
+    let isBoosted = false;
+    let speedBoostTimer = 0; 
+    const boostDuration = 3.0; 
+    const boostTargetSpeed = 0.35;
+    let targetFov = 100; 
+
+    let shakeTimer = 0;
+
+    let hasDoneTutorial = false;
+    let tutorialState = 0; 
+    let canRestart = false; 
+
+    const MAP_GAP_TWEAK = -7.5; 
+    let objects = []; 
+    let scatteredCoins = [];
+
+    const GROUND_Y = 0; 
+    const WALL_LIMIT = 4; 
+    const MAP_OFFSET_Y = 4.5; 
+    const MAP_LENGTH_OVERLAP = 1.0; 
+
+    const PLAYER_SCALE = 0.015;    
+    const PLAYER_OFFSET_Y = 0.5;    
+    const OBSTACLE_OFFSET_Y = 0;  
+    const COIN_OFFSET_Y = 0.5;    
+    
+    const COIN_SCALE = 0.006;      
+    const CAN_SCALE = 0.006; 
+    const PIGGY_SCALE = 0.03;
+    const PIGGY_OFFSET_Y = 3.0;
+
+    const PHONEBOOTH_SCALE = 0.005;
+    const CART_SCALE = 0.005;
+    
+    const CONTROLLER_SCALE = 0.004; 
+    const SKATEBOARD_SCALE = 0.01;
+
+    let isMapLoaded = false;
+    let mapsLoadedCount = 0;
+    
+    const titleFloors = [];
+    const normalFloors = [];
+    const bonusFloors = [];
+    
+    let titleMapChunkLength = 60;
+    let normalMapChunkLength = 60;
+    let bonusMapChunkLength = 60;
+
+    let coinModel = null; 
+    let canModel = null; 
+    let phoneBoothModel = null;
+    let cartModel = null;
+    let controllerModel = null;
+    let skateboardModel = null;
+
+    let player;
+    let playerGroup; 
+    let spikeWall;       
+    let piggyRollGroup;  
+    
+    let selectedCharacter = 0;
+    let currentHoverChar = 0; 
+
+    const charColors = [0xffffff, 0xffffff, 0xffffff, 0xffffff, 0xffffff, 0xffffff, 0xffffff];
+
+    let mixer;
+    let animations = {}; 
+    let currentAction;
+    const clock = new THREE.Clock();
+
+    let speedLines = [];
+    const speedLineCount = 30;
+
+    const fbxLoader = new THREE.FBXLoader();
+
+    const characterPaths = {
+        0: { fastRun: 'YUSEOP_Fast Run.fbx', jump: 'YUSEOP_Jump.fbx', run: 'YUSEOP_Run.fbx', dance: 'YUSEOP_DANCE RUN.fbx' },
+        1: { fastRun: 'HYUNJUN_Fast Run.fbx', jump: 'HYUNJUN_Jump.fbx', run: 'HYUNJUN_Run.fbx', dance: 'HYUNJUN_DANCE RUN.fbx' },
+        2: { fastRun: 'JUNPYO_Fast Run.fbx', jump: 'JUNPYO_Jump.fbx', run: 'JUNPYO_Run.fbx', dance: 'JUNPYO_DANCE RUN.fbx' },
+        3: { fastRun: 'Fast Run.fbx', jump: 'Jump.fbx', run: 'Run.fbx', dance: 'LIN_DANCE RUN.fbx' },
+        4: { fastRun: 'PAN_Fast Run.fbx', jump: 'PAN_Jump.fbx', run: 'PAN_Run.fbx', dance: 'PAN_DANCE RUN.fbx' },
+        5: { fastRun: 'MIRAKU_Fast Run.fbx', jump: 'MIRAKU_Jump.fbx', run: 'MIRAKU_Run.fbx', dance: 'MIRAKU_DANCE RUN.fbx' },
+        6: { fastRun: 'GIHYUN_FastRun.fbx', jump: 'GIHYUN_Jump.fbx', run: 'GIHYUN_Run.fbx', dance: 'GIHYUN_DANCE RUN.fbx' }
+    };
+    let loadedCharacters = {};
+
+    function applyCharacterColor(id) {
+        if (!player) return;
+        player.traverse((child) => {
+            if (child.isMesh && child.material) {
+                child.material.color.setHex(charColors[id]);
+            }
+        });
+    }
+
+    // 💡 캐릭터 전환 시 이미 로드된 비디오의 투명도만 조절
+    function updateCharHoverUI() {
+        applyCharacterColor(currentHoverChar);
+        
+        for (let i = 0; i < previewVideos.length; i++) {
+            if (i === currentHoverChar) {
+                previewVideos[i].style.opacity = '1';
+                previewVideos[i].style.zIndex = '1';
+            } else {
+                previewVideos[i].style.opacity = '0';
+                previewVideos[i].style.zIndex = '0';
+            }
+        }
+    }
+
+    function setupPlayer(modelId) {
+        if (playerGroup && playerGroup.parent) scene.remove(playerGroup);
+        let charData = loadedCharacters[modelId] || loadedCharacters[0];
+        player = charData.player;
+        playerGroup = charData.group;
+        mixer = charData.mixer;
+        animations = charData.animations;
+        scene.add(playerGroup);
+    }
+
+    function finalizeStart(id) {
+        let modelId = [0, 1, 2, 3, 4, 5, 6].includes(id) ? id : 0; 
+        setupPlayer(modelId);
+        applyCharacterColor(id);
+
+        if (currentAction) {
+            currentAction.stop();
+            currentAction = null;
+        }
+
+        document.getElementById('charSelectScreen').style.display = 'none';
+        if(!isMobile) document.getElementById('controls-img').style.display = 'block'; 
+        
+        // 💡 게임 시작 시 배경에서 돌아가는 비디오들을 모두 일시정지
+        previewVideos.forEach(vid => vid.pause());
+
+        score = 0; document.getElementById('score').innerText = score;
+        comboCount = 0; document.getElementById('comboMsg').style.display = 'none';
+        bonusGaugeScore = 0; updateGaugeUI();
+        isBonusRound = false; bonusTimer = 0; document.getElementById('bonusMsg').style.display = 'none';
+
+        availableBonusVideos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+
+        currentSpeed = normalSpeed; 
+        isBoosted = false; speedBoostTimer = 0; targetFov = 100; shakeTimer = 0; 
+        speedEffectUI.style.boxShadow = "inset 0 0 150px 20px rgba(0, 255, 255, 0)";
+        velocityY = 0; isJumping = false; autoScoreTimer = 0;
+
+        if (mixer) mixer.timeScale = 1.0; 
+        if (playerGroup) {
+            playerGroup.position.set(0, GROUND_Y + PLAYER_OFFSET_Y, 0); 
+            spikeWall.position.set(0, GROUND_Y + PIGGY_OFFSET_Y, -20); 
+            playerGroup.visible = true; 
+        }
+        
+        spikeWall.visible = true;
+
+        titleFloors.forEach(f => f.visible = false);
+        normalFloors.forEach((f, i) => {
+            f.visible = true;
+            f.position.z = playerGroup.position.z + (i - 1) * (normalMapChunkLength + MAP_GAP_TWEAK);
+            f.position.x = f.userData.fixedX;
+            f.position.y = f.userData.fixedY;
+        });
+        bonusFloors.forEach(f => f.visible = false);
+
+        objects.forEach(obj => scene.remove(obj)); objects = [];
+        scatteredCoins.forEach(c => scene.remove(c.mesh)); scatteredCoins = [];
+
+        for (let i = 0; i < 10; i++) {
+            spawnObject(playerGroup.position.z + 30 + (i * 12));
+        }
+
+        gameState = 'intro'; 
+        introTimer = 0;      
+        fadeToAction('run', 0.2); 
+    }
+
+    function selectCharacterAndStart(id) {
+        selectedCharacter = id;
+        document.getElementById('charSelectScreen').style.display = 'none';
+        let modelId = [0, 1, 2, 3, 4, 5, 6].includes(id) ? id : 0; 
+
+        if (!loadedCharacters[modelId]) {
+            const loadScreen = document.getElementById('loadingScreen');
+            loadScreen.style.display = 'flex';
+            const loadVideo = loadScreen.querySelector('video');
+            if(loadVideo) loadVideo.play().catch(e=>console.log(e));
+
+            loadCharacterModel(modelId, () => {
+                loadScreen.style.display = 'none';
+                if(loadVideo) loadVideo.pause();
+                finalizeStart(id);
+            });
+        } else {
+            finalizeStart(id);
+        }
+    }
+
+    function resetGameToCharSelect() {
+        const wastedVideo = document.getElementById('wastedVideo');
+        wastedVideo.style.display = 'none'; wastedVideo.pause();
+        
+        const bonusVideo = document.getElementById('bonusVideo');
+        bonusVideo.style.display = 'none'; bonusVideo.pause();
+        
+        document.getElementById('bonusVideoPrompt').style.display = 'none';
+        document.getElementById('gameOverMsg').style.display = 'none';
+        document.getElementById('comboMsg').style.display = 'none';
+        document.getElementById('startMsg').style.display = 'none';
+        document.getElementById('bonusMsg').style.display = 'none';
+        document.getElementById('mobile-jump-btn').style.display = 'none';
+
+        gameOverAudio.pause();
+        gameOverAudio.currentTime = 0;
+        if (bgmAudio.paused) bgmAudio.play().catch(err => {});
+        
+        goToCharSelect();
+    }
+
+    function goToCharSelect() {
+        document.getElementById('controls-img').style.display = 'none'; 
+        document.getElementById('charSelectScreen').style.display = 'flex';
+        document.getElementById('mobile-jump-btn').style.display = 'none'; 
+        
+        // 💡 캐릭터 창으로 돌아올 때 비디오 다시 재생
+        previewVideos.forEach(vid => vid.play().catch(e=>{}));
+        
+        gameState = 'charSelect';
+        
+        objects.forEach(obj => scene.remove(obj)); objects = [];
+        scatteredCoins.forEach(c => scene.remove(c.mesh)); scatteredCoins = [];
+        spikeWall.visible = false;
+        
+        if (playerGroup) {
+            playerGroup.position.set(0, GROUND_Y + PLAYER_OFFSET_Y, 0); 
+            playerGroup.visible = true;
+        }
+        
+        if (mixer) mixer.timeScale = 1.0;
+        fadeToAction('run', 0.2);
+        
+        currentHoverChar = selectedCharacter; 
+        updateCharHoverUI();
+
+        if (player) {
+            player.traverse((child) => {
+                if (child.isMesh && child.material && child.material.emissive) {
+                    child.material.emissiveIntensity = 0;
+                }
+            });
+        }
+    }
+
+    function updateGaugeUI() {
+        let percent = (bonusGaugeScore / BONUS_THRESHOLD) * 100;
+        if (percent > 100) percent = 100;
+        document.getElementById('gauge-fill').style.width = percent + '%';
+    }
+
+    function startBonusRound() {
+        if (isBonusRound) return;
+        isBonusRound = true;
+        bonusTimer = 5.0; 
+        autoScoreTimer = 0;
+        
+        // 💡 환호성 사운드 재생 (매번 처음부터 재생되도록 currentTime을 0으로 초기화)
+        cheerAudio.currentTime = 0;
+        cheerAudio.play().catch(e => console.log("Cheer audio error:", e));
+
+        document.getElementById('bonusMsg').style.display = 'block';
+        comboCount = 0; document.getElementById('comboMsg').style.display = 'none';
+
+        triggerFireworks();
+        if (!isJumping) fadeToAction('dance', 0.2);
+        
+        normalFloors.forEach(f => f.visible = false);
+        bonusFloors.forEach((f, i) => {
+            f.visible = true;
+            f.position.z = playerGroup.position.z + (i - 1) * (bonusMapChunkLength + MAP_GAP_TWEAK);
+            f.position.x = f.userData.fixedX;
+            f.position.y = f.userData.fixedY;
+        });
+
+        objects.forEach(obj => scene.remove(obj)); objects = [];
+        spikeWall.visible = false;
+
+        for (let i = 0; i < 15; i++) {
+            spawnObject(playerGroup.position.z + 20 + (i * 10)); 
+        }
+    }
+
+    function startBonusEnding() {
+        isBonusRound = false; 
+        gameState = 'bonusEnding';
+        absorbTimer = 0.5; 
+        document.getElementById('bonusMsg').style.display = 'none';
+        document.getElementById('mobile-jump-btn').style.display = 'none'; 
+        
+        savedSpeed = currentSpeed; 
+        currentSpeed = 0; spikeWallSpeed = 0; 
+        
+        absorbParticles.material.opacity = 1;
+        const positions = absorbParticles.geometry.attributes.position.array;
+        for(let i=0; i < absorbCount; i++) {
+            const r = 20 + Math.random() * 20; 
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            
+            abStart[i].set(
+                playerGroup.position.x + r * Math.sin(phi) * Math.cos(theta),
+                playerGroup.position.y + 5 + r * Math.cos(phi),
+                playerGroup.position.z + r * Math.sin(phi) * Math.sin(theta) + 10 
+            );
+            positions[i*3] = abStart[i].x; positions[i*3+1] = abStart[i].y; positions[i*3+2] = abStart[i].z;
+        }
+        absorbParticles.geometry.attributes.position.needsUpdate = true;
+    }
+
+    function restoreFromBonus() {
+        currentSpeed = savedSpeed || normalSpeed; 
+        if (!isJumping) fadeToAction(isBoosted ? 'sprint' : 'run', 0.2);
+        
+        normalFloors.forEach((f, i) => {
+            f.visible = true;
+            f.position.z = playerGroup.position.z + (i - 1) * (normalMapChunkLength + MAP_GAP_TWEAK);
+        });
+        bonusFloors.forEach(f => f.visible = false);
+
+        objects.forEach(obj => scene.remove(obj)); objects = [];
+
+        for (let i = 0; i < 10; i++) { spawnObject(playerGroup.position.z + 40 + (i * 12)); }
+
+        bonusGaugeScore = 0; updateGaugeUI();
+        spikeWall.visible = true; spikeWall.position.z = playerGroup.position.z - 20;
+        gameState = 'playing';
+        if (isMobile) document.getElementById('mobile-jump-btn').style.display = 'block'; 
+    }
+
+    function checkMapsLoaded() {
+        mapsLoadedCount++;
+        if (mapsLoadedCount === 3) { 
+            isMapLoaded = true;
+            loadCharacterModel(0, () => {
+                setupPlayer(0);
+                
+                const loadScreen = document.getElementById('loadingScreen');
+                const loadVideo = loadScreen.querySelector('video');
+                if(loadVideo) loadVideo.pause();
+                loadScreen.style.display = 'none';
+
+                document.getElementById('titleScreen').style.display = 'flex';
+                gameState = 'title'; 
+                
+                if(!isMobile) bgmAudio.play().catch(err => console.log("BGM Play Error:", err));
+                
+                playerGroup.visible = false; 
+
+                titleFloors.forEach(f => f.visible = true);
+                normalFloors.forEach(f => f.visible = false);
+                bonusFloors.forEach(f => f.visible = false);
+
+                currentAction = animations['run'];
+                if (currentAction) currentAction.play();
+            });
+        }
+    }
+
+    function startMobileTutorial() {
+        gameState = 'tutorial';
+        tutorialState = 1;
+        document.getElementById('tutorial-overlay').style.display = 'block';
+        document.getElementById('tut-left').style.opacity = 1;
+        document.getElementById('mobile-jump-btn').style.display = 'block'; 
+        if(mixer) mixer.timeScale = 0; 
+    }
+
+    function handleTutorialTouch(x) {
+        const w = window.innerWidth;
+        if (tutorialState === 1 && x < w / 2) { 
+            document.getElementById('tut-left').style.opacity = 0;
+            document.getElementById('tut-right').style.opacity = 1;
+            tutorialState = 2;
+        } else if (tutorialState === 2 && x >= w / 2) { 
+            document.getElementById('tut-right').style.opacity = 0;
+            document.getElementById('tut-full').style.opacity = 1;
+            tutorialState = 3;
+        }
+    }
+
+    function finishTutorialAndJump() {
+        document.getElementById('tut-full').style.opacity = 0;
+        setTimeout(() => {
+            document.getElementById('tutorial-overlay').style.display = 'none';
+            tutorialState = 0;
+            gameState = 'playing';
+            hasDoneTutorial = true;
+            if(mixer) mixer.timeScale = 1.0; 
+            
+            if (!isJumping && playerGroup) {
+                velocityY = JUMP_SPEED;
+                isJumping = true;
+                fadeToAction('jump', 0.2); 
+            }
+
+            const startMsg = document.getElementById('startMsg');
+            startMsg.style.display = 'block';
+            setTimeout(() => { startMsg.style.display = 'none'; }, 2000);
+            
+        }, 300);
+    }
+
+    document.getElementById('mobile-jump-btn').addEventListener('touchstart', (e) => {
+        e.preventDefault(); 
+        e.stopPropagation();
+        if (gameState === 'tutorial' && tutorialState === 3) {
+            finishTutorialAndJump();
+        } else if (gameState === 'playing' && !isJumping && playerGroup) {
+            velocityY = JUMP_SPEED; 
+            isJumping = true; 
+            fadeToAction('jump', 0.2); 
+        }
+    });
+
+    // 💡 모바일 버튼 클릭 시 selectAudioPool 사용
+    document.getElementById('m-btn-left').addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); if(gameState==='charSelect'){ currentHoverChar = (currentHoverChar > 0) ? currentHoverChar - 1 : 6; updateCharHoverUI(); playSelectSound(); } });
+    document.getElementById('m-btn-right').addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); if(gameState==='charSelect'){ currentHoverChar = (currentHoverChar < 6) ? currentHoverChar + 1 : 0; updateCharHoverUI(); playSelectSound(); } });
+    document.getElementById('m-btn-go').addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); if(gameState==='charSelect'){ selectCharacterAndStart(currentHoverChar); } });
+
+    function initSpeedLines() {
+        const lineGeo = new THREE.BoxGeometry(0.05, 0.05, 4);
+        const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
+        for (let i = 0; i < speedLineCount; i++) {
+            const line = new THREE.Mesh(lineGeo, lineMat.clone());
+            line.visible = false; scene.add(line); speedLines.push(line);
+        }
+    }
+    initSpeedLines();
+
+    function updateSpeedLines(delta, fpsRatio) {
+        speedLines.forEach(line => {
+            if (isBoosted) {
+                line.visible = true; line.position.z -= currentSpeed * 2.5 * fpsRatio; 
+                if (line.position.z < playerGroup.position.z - 10) {
+                    line.position.set((Math.random() - 0.5) * 12, Math.random() * 5, playerGroup.position.z + 50 + Math.random() * 20);
+                    line.material.opacity = 0.3 + Math.random() * 0.5;
+                }
+            } else { line.visible = false; }
+        });
+    }
+
+    function emitBonusCoins() {
+        if (!coinModel || !playerGroup) return;
+        let dropCount = 2; 
+        for(let i = 0; i < dropCount; i++) {
+            let coin = coinModel.clone(); coin.position.copy(playerGroup.position); coin.position.y += 1.5; scene.add(coin);
+            scatteredCoins.push({ mesh: coin, vx: (Math.random() - 0.5) * 25, vy: Math.random() * 20 + 10, vz: (currentSpeed * 40) + (Math.random() - 0.5) * 30, life: 1.0 });
+        }
+    }
+
+    function scatterCoins() {
+        if (!coinModel) return;
+        let dropCount = 5 + Math.floor(Math.random() * 5); 
+        for (let i = 0; i < dropCount; i++) {
+            let coin = coinModel.clone(); coin.position.copy(playerGroup.position); coin.position.y += 1.0; scene.add(coin);
+            scatteredCoins.push({ mesh: coin, vx: (Math.random() - 0.5) * 15, vy: Math.random() * 15 + 15, vz: (currentSpeed * 60) + (Math.random() - 0.5) * 15, life: 1.5 });
+        }
+    }
+
+    function updateScatteredCoins(delta) {
+        for (let i = scatteredCoins.length - 1; i >= 0; i--) {
+            let sc = scatteredCoins[i]; sc.life -= delta;
+            sc.mesh.position.x += sc.vx * delta; sc.mesh.position.y += sc.vy * delta; sc.mesh.position.z += sc.vz * delta; sc.vy += JUMP_GRAVITY * delta; 
+            if (sc.mesh.position.y <= GROUND_Y + COIN_OFFSET_Y) {
+                sc.mesh.position.y = GROUND_Y + COIN_OFFSET_Y; sc.vy = Math.abs(sc.vy) * 0.5; sc.vx *= 0.8; sc.vz *= 0.8;
+            }
+            sc.mesh.rotation.y += 15 * delta; sc.mesh.rotation.x += 10 * delta;
+            if (sc.life < 0.3) { let scale = (sc.life / 0.3) * COIN_SCALE; sc.mesh.scale.set(scale, scale, scale); }
+            if (sc.life <= 0) { scene.remove(sc.mesh); scatteredCoins.splice(i, 1); }
+        }
+    }
+
+    spikeWall = new THREE.Group(); spikeWall.position.set(0, GROUND_Y + PIGGY_OFFSET_Y, -20); scene.add(spikeWall);
+    piggyRollGroup = new THREE.Group(); piggyRollGroup.position.y = 1.0; spikeWall.add(piggyRollGroup);
+
+    const sparkCount = 150; const sparkGeo = new THREE.BufferGeometry(); const sparkPos = new Float32Array(sparkCount * 3);
+    const sparkVel = []; const sparkLife = []; const PIGGY_HALF_WIDTH = 5.5; 
+
+    for (let i = 0; i < sparkCount; i++) { sparkPos[i*3] = 0; sparkPos[i*3+1] = 0; sparkPos[i*3+2] = 0; sparkVel.push(new THREE.Vector3()); sparkLife.push(0); }
+    sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3));
+    const sparkMat = new THREE.PointsMaterial({ color: 0xffaa00, size: 0.7, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
+    const sparkParticles = new THREE.Points(sparkGeo, sparkMat); spikeWall.add(sparkParticles); 
+
+    function updateSparks(delta) {
+        const positions = sparkParticles.geometry.attributes.position.array;
+        for (let i = 0; i < sparkCount; i++) {
+            sparkLife[i] -= delta * 3.5; 
+            if (sparkLife[i] <= 0) {
+                sparkLife[i] = Math.random() * 0.5 + 0.3; 
+                positions[i*3] = (Math.random() - 0.5) * (PIGGY_HALF_WIDTH * 1.5); positions[i*3+1] = Math.random() * -8  + 0.1; positions[i*3+2] = (Math.random() - -1) * 2.0; 
+                sparkVel[i].set((Math.random() - 0.5) * 6, Math.random() * 12 + 1, -(Math.random() * 10 + 3));
+            }
+            positions[i*3] += sparkVel[i].x * delta; positions[i*3+1] += sparkVel[i].y * delta; positions[i*3+2] += sparkVel[i].z * delta; sparkVel[i].y -= 12.0 * delta; 
+        }
+        sparkParticles.geometry.attributes.position.needsUpdate = true;
+    }
+
+    const fwCount = 300; const fwGeo = new THREE.BufferGeometry(); const fwPos = new Float32Array(fwCount * 3); const fwVel = [];
+    for(let i=0; i<fwCount; i++) { fwPos[i*3] = 0; fwPos[i*3+1] = 0; fwPos[i*3+2] = 0; fwVel.push(new THREE.Vector3()); }
+    fwGeo.setAttribute('position', new THREE.BufferAttribute(fwPos, 3));
+    const fwMat = new THREE.PointsMaterial({ color: 0xff55ff, size: 0.8, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+    const fireworkParticles = new THREE.Points(fwGeo, fwMat); scene.add(fireworkParticles);
+
+    let fireworkTimer = 0;
+    function triggerFireworks() {
+        fireworkTimer = 1.5; fireworkParticles.material.opacity = 1;
+        const positions = fireworkParticles.geometry.attributes.position.array;
+        for(let i=0; i<fwCount; i++) {
+            positions[i*3] = playerGroup.position.x; positions[i*3+1] = playerGroup.position.y + 10; positions[i*3+2] = playerGroup.position.z + 25; 
+            const theta = Math.random() * Math.PI * 2; const phi = Math.acos((Math.random() * 2) - 1); const speed = Math.random() * 25 + 5;
+            fwVel[i].set(speed * Math.sin(phi) * Math.cos(theta), speed * Math.sin(phi) * Math.sin(theta), speed * Math.cos(phi));
+        }
+        fireworkParticles.geometry.attributes.position.needsUpdate = true;
+    }
+
+    function updateFireworks(delta) {
+        if (fireworkTimer > 0) {
+            fireworkTimer -= delta; fireworkParticles.material.opacity = fireworkTimer;
+            const positions = fireworkParticles.geometry.attributes.position.array;
+            for(let i=0; i<fwCount; i++) {
+                positions[i*3] += fwVel[i].x * delta; positions[i*3+1] += fwVel[i].y * delta; positions[i*3+2] += fwVel[i].z * delta; fwVel[i].y -= 9.8 * delta; 
+            }
+            fireworkParticles.geometry.attributes.position.needsUpdate = true;
+        }
+    }
+
+    const absorbCount = 200; const absorbGeo = new THREE.BufferGeometry(); const absorbPos = new Float32Array(absorbCount * 3); const abStart = [];
+    for(let i=0; i<absorbCount; i++) { absorbPos[i*3]=0; absorbPos[i*3+1]=0; absorbPos[i*3+2]=0; abStart.push(new THREE.Vector3()); }
+    absorbGeo.setAttribute('position', new THREE.BufferAttribute(absorbPos, 3));
+    const absorbMat = new THREE.PointsMaterial({ color: 0x00ffff, size: 0.8, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+    const absorbParticles = new THREE.Points(absorbGeo, absorbMat); scene.add(absorbParticles);
+
+    fbxLoader.load('PiggyBank.fbx', (object) => { object.scale.set(PIGGY_SCALE, PIGGY_SCALE, PIGGY_SCALE); object.rotation.y = -Math.PI / 2; object.position.y = -1.0; object.traverse((child) => { if (child.isMesh && child.material) { if (Array.isArray(child.material)) child.material.forEach(m => m.flatShading = true); else child.material.flatShading = true; } }); piggyRollGroup.add(object); });
+    fbxLoader.load('COIN2.fbx', (object) => { coinModel = object; coinModel.scale.set(COIN_SCALE, COIN_SCALE, COIN_SCALE); coinModel.traverse((child) => { if (child.isMesh && child.material) { if (Array.isArray(child.material)) child.material.forEach(m => m.flatShading = true); else child.material.flatShading = true; } }); });
+    fbxLoader.load('CAN 2.fbx', (object) => { canModel = object; canModel.scale.set(CAN_SCALE, CAN_SCALE, CAN_SCALE); canModel.traverse((child) => { if (child.isMesh && child.material) { if (Array.isArray(child.material)) child.material.forEach(m => m.flatShading = true); else child.material.flatShading = true; } }); });
+    fbxLoader.load('PHONEBOOTH REAL.fbx', (object) => { phoneBoothModel = object; phoneBoothModel.scale.set(PHONEBOOTH_SCALE, PHONEBOOTH_SCALE, PHONEBOOTH_SCALE); phoneBoothModel.traverse((child) => { if (child.isMesh && child.material) { if (Array.isArray(child.material)) child.material.forEach(m => m.flatShading = true); else child.material.flatShading = true; } }); });
+    fbxLoader.load('SHOPPING_CART.fbx', (object) => { cartModel = object; cartModel.scale.set(CART_SCALE, CART_SCALE, CART_SCALE); cartModel.traverse((child) => { if (child.isMesh && child.material) { if (Array.isArray(child.material)) child.material.forEach(m => m.flatShading = true); else child.material.flatShading = true; } }); });
+    fbxLoader.load('GAMECONTROLER.fbx', (object) => { controllerModel = object; controllerModel.scale.set(CONTROLLER_SCALE, CONTROLLER_SCALE, CONTROLLER_SCALE); controllerModel.traverse((child) => { if (child.isMesh && child.material) { if (Array.isArray(child.material)) child.material.forEach(m => m.flatShading = true); else child.material.flatShading = true; } }); });
+    fbxLoader.load('SKATEBOARD.fbx', (object) => { skateboardModel = object; skateboardModel.scale.set(SKATEBOARD_SCALE, SKATEBOARD_SCALE, SKATEBOARD_SCALE); object.traverse((child) => { if (child.isMesh && child.material) { if (Array.isArray(child.material)) child.material.forEach(m => m.flatShading = true); else child.material.flatShading = true; } }); });
+
+    fbxLoader.load('ALLY3.fbx', (mapObject) => {
+        const MAP_SCALE = 0.04; mapObject.scale.set(MAP_SCALE, MAP_SCALE, MAP_SCALE);
+        mapObject.traverse((child) => { if (child.isLight || child.isCamera) child.visible = false; if (child.isMesh) { child.frustumCulled = false; if (child.material) { if (Array.isArray(child.material)) child.material.forEach(m => m.flatShading = true); else child.material.flatShading = true; } } });
+        mapObject.updateMatrixWorld(true); const box = new THREE.Box3().setFromObject(mapObject); const size = new THREE.Vector3(); box.getSize(size);
+        normalMapChunkLength = size.z - MAP_LENGTH_OVERLAP; if (normalMapChunkLength < 5) normalMapChunkLength = 60; 
+        for (let i = -1; i < 4; i++) { const chunk = mapObject.clone(); const microOffsetX = (i % 2 === 0) ? 0.0002 : -0.0002; const microOffsetY = (i % 2 === 0) ? 0.0002 : -0.0002; chunk.userData.fixedX = microOffsetX; chunk.userData.fixedY = MAP_OFFSET_Y + microOffsetY; chunk.position.set(chunk.userData.fixedX, chunk.userData.fixedY, i * (normalMapChunkLength + MAP_GAP_TWEAK)); chunk.visible = false; scene.add(chunk); normalFloors.push(chunk); }
+        checkMapsLoaded();
+    });
+
+    fbxLoader.load('BackAlley4.fbx', (mapObject) => {
+        const MAP_SCALE = 0.04; mapObject.scale.set(MAP_SCALE, MAP_SCALE, MAP_SCALE);
+        mapObject.traverse((child) => { if (child.isLight || child.isCamera) child.visible = false; if (child.isMesh) { child.frustumCulled = false; if (child.material) { if (Array.isArray(child.material)) child.material.forEach(m => m.flatShading = true); else child.material.flatShading = true; } } });
+        mapObject.updateMatrixWorld(true); const box = new THREE.Box3().setFromObject(mapObject); const size = new THREE.Vector3(); box.getSize(size);
+        titleMapChunkLength = size.z - MAP_LENGTH_OVERLAP; if (titleMapChunkLength < 5) titleMapChunkLength = 60; 
+        for (let i = -1; i < 4; i++) { const chunk = mapObject.clone(); const microOffsetX = (i % 2 === 0) ? 0.0002 : -0.0002; const microOffsetY = (i % 2 === 0) ? 0.0002 : -0.0002; chunk.userData.fixedX = microOffsetX; chunk.userData.fixedY = MAP_OFFSET_Y + microOffsetY; chunk.position.set(chunk.userData.fixedX, chunk.userData.fixedY, i * (titleMapChunkLength + MAP_GAP_TWEAK)); chunk.visible = false; scene.add(chunk); titleFloors.push(chunk); }
+        checkMapsLoaded();
+    });
+
+    fbxLoader.load('pop bill.fbx', (mapObject) => {
+        mapObject.scale.set(BONUS_MAP_SCALE, BONUS_MAP_SCALE, BONUS_MAP_SCALE); mapObject.position.x += BONUS_MAP_OFFSET_X;
+        mapObject.traverse((child) => { if (child.isLight || child.isCamera) child.visible = false; if (child.isMesh) { child.frustumCulled = false; if (child.material) { if (Array.isArray(child.material)) { child.material.forEach(m => { m.flatShading = true; m.side = THREE.DoubleSide; }); } else { child.material.flatShading = true; child.material.side = THREE.DoubleSide; } } } });
+        mapObject.updateMatrixWorld(true); const box = new THREE.Box3().setFromObject(mapObject); const size = new THREE.Vector3(); box.getSize(size);
+        bonusMapChunkLength = size.z > 0 ? size.z : MANUAL_BONUS_LENGTH; if (bonusMapChunkLength < 5 || isNaN(bonusMapChunkLength)) bonusMapChunkLength = MANUAL_BONUS_LENGTH; 
+        for (let i = -1; i < 4; i++) { const chunk = mapObject.clone(); const microOffsetX = (i % 2 === 0) ? 0.0002 : -0.0002; const microOffsetY = (i % 2 === 0) ? 0.0002 : -0.0002; chunk.userData.fixedX = BONUS_MAP_OFFSET_X + microOffsetX; chunk.userData.fixedY = BONUS_MAP_OFFSET_Y + microOffsetY; chunk.position.set(chunk.userData.fixedX, chunk.userData.fixedY, i * (bonusMapChunkLength + MAP_GAP_TWEAK)); chunk.visible = false; scene.add(chunk); bonusFloors.push(chunk); }
+        checkMapsLoaded();
+    });
+
+    function loadCharacterModel(modelId, callback) {
+        if (loadedCharacters[modelId]) { if (callback) callback(); return; }
+        let paths = characterPaths[modelId] || characterPaths[0];
+        fbxLoader.load(paths.fastRun, (object) => {
+            let newPlayer = object; let newPlayerGroup = new THREE.Group(); newPlayerGroup.scale.set(PLAYER_SCALE, PLAYER_SCALE, PLAYER_SCALE); newPlayerGroup.position.set(0, GROUND_Y + PLAYER_OFFSET_Y, 0); newPlayerGroup.rotation.y = 0; newPlayerGroup.add(newPlayer);
+            newPlayer.traverse(function (child) { if (child.isMesh) { child.frustumCulled = false; if (child.material) child.material.side = THREE.DoubleSide; } });
+            let newMixer = new THREE.AnimationMixer(newPlayer); newMixer.timeScale = 1.0; 
+            let runClip = newPlayer.animations[0]; runClip.tracks = runClip.tracks.filter(t => !t.name.toLowerCase().includes('hips.position'));
+            let anims = {}; anims['run'] = newMixer.clipAction(runClip);
+            fbxLoader.load(paths.jump, (animObj) => {
+                let jumpClip = animObj.animations[0]; jumpClip.tracks = jumpClip.tracks.filter(t => !t.name.toLowerCase().includes('hips.position'));
+                const jumpAction = newMixer.clipAction(jumpClip); jumpAction.setLoop(THREE.LoopOnce); jumpAction.clampWhenFinished = true; anims['jump'] = jumpAction;
+                fbxLoader.load(paths.run, (sprintObj) => {
+                    let sprintClip = sprintObj.animations[0]; sprintClip.tracks = sprintClip.tracks.filter(t => !t.name.toLowerCase().includes('hips.position')); anims['sprint'] = newMixer.clipAction(sprintClip); 
+                    fbxLoader.load(paths.dance, (danceObj) => {
+                        let danceClip = danceObj.animations[0]; danceClip.tracks = danceClip.tracks.filter(t => !t.name.toLowerCase().includes('hips.position')); anims['dance'] = newMixer.clipAction(danceClip); 
+                        loadedCharacters[modelId] = { player: newPlayer, group: newPlayerGroup, mixer: newMixer, animations: anims };
+                        if (callback) callback();
+                    });
+                });
+            });
+        });
+    }
+
+    function fadeToAction(name, duration) {
+        const nextAction = animations[name];
+        if (!nextAction || currentAction === nextAction) return;
+        if (currentAction) currentAction.fadeOut(duration);
+        nextAction.reset().fadeIn(duration).play();
+        currentAction = nextAction;
+    }
+
+    const warningGeo = new THREE.ConeGeometry(0.5, 1.5, 4); warningGeo.rotateX(Math.PI); const warningMat = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 1 });
+    function createDangerLabelSprite() {
+        const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); canvas.width = 256; canvas.height = 64; ctx.font = 'bold 40px "Press Start 2P", sans-serif'; ctx.fillStyle = '#ff0000'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('DANGER!', canvas.width / 2, canvas.height / 2);
+        const texture = new THREE.CanvasTexture(canvas); const material = new THREE.SpriteMaterial({ map: texture, transparent: true }); const sprite = new THREE.Sprite(material); sprite.scale.set(4, 1, 1); return sprite;
+    }
+
+    function createWarningArrow(x, z) {
+        const arrowMesh = new THREE.Mesh(warningGeo, warningMat.clone()); arrowMesh.position.set(x, GROUND_Y + 4, z - 15); arrowMesh.userData = { type: 'warning' }; scene.add(arrowMesh); objects.push(arrowMesh);
+        const dangerSprite = createDangerLabelSprite(); dangerSprite.position.set(x, GROUND_Y + 5.5, z - 35); dangerSprite.userData = { type: 'warningText', parentArrow: arrowMesh }; scene.add(dangerSprite); objects.push(dangerSprite);
+    }
+
+    function spawnObject(forcedZ = null) {
+        const rand = Math.random(); let obj, type; const spawnZ = forcedZ !== null ? forcedZ : playerGroup.position.z + 100 + (Math.random() * 40); const SAFE_LIMIT = WALL_LIMIT - 1.0; const randomX = (Math.random() - 0.5) * (SAFE_LIMIT * 2); 
+        if (isBonusRound) {
+            if (rand < 0.15 && controllerModel) { obj = controllerModel.clone(); obj.position.set(randomX, GROUND_Y + COIN_OFFSET_Y + 0.5, spawnZ); type = 'controller'; } 
+            else if (rand >= 0.15 && rand < 0.30 && skateboardModel) { obj = new THREE.Group(); let skateMesh = skateboardModel.clone(); skateMesh.rotation.x = Math.PI; obj.add(skateMesh); obj.position.set(randomX, GROUND_Y + COIN_OFFSET_Y + 0.5, spawnZ); type = 'skateboard'; }
+        } else {
+            if (rand < 0.50 && coinModel) { obj = coinModel.clone(); obj.position.set(randomX, GROUND_Y + COIN_OFFSET_Y, spawnZ); type = 'coin'; } 
+            else if (rand >= 0.78 && rand < 0.82 && canModel) { obj = canModel.clone(); obj.position.set(randomX, GROUND_Y + COIN_OFFSET_Y + 0.5, spawnZ); type = 'can'; } 
+            else if (rand >= 0.82 && rand < 0.91 && phoneBoothModel) { obj = phoneBoothModel.clone(); obj.position.set(randomX, GROUND_Y, spawnZ); obj.rotation.y = Math.random() * Math.PI * 2; type = 'obstacle'; } 
+            else if (rand >= 0.91 && cartModel) { obj = cartModel.clone(); obj.position.set(randomX, GROUND_Y, spawnZ); obj.rotation.y = Math.random() * Math.PI * 2; type = 'obstacle'; }
+        }
+        if(obj) { obj.userData = { type: type }; scene.add(obj); objects.push(obj); if (type === 'obstacle') { createWarningArrow(obj.position.x, spawnZ); } }
+    }
+
+    const keys = {};
+    
+    document.addEventListener('keydown', (e) => {
+        keys[e.code] = true;
+        if (e.code === 'KeyR' && ['playing', 'gameover', 'intro', 'bonusEnding', 'bonusVideoPlay', 'bonusVideoWait'].includes(gameState)) {
+            if (gameState === 'gameover' && !canRestart) return; 
+            resetGameToCharSelect();
+        }
+        else if (!isMobile && gameState === 'title') {
+            if (currentAction) {
+                document.getElementById('titleScreen').style.display = 'none'; document.getElementById('charSelectScreen').style.display = 'flex';
+                gameState = 'charSelect'; playerGroup.visible = true; currentHoverChar = selectedCharacter; updateCharHoverUI();
+            }
+        } 
+        else if (!isMobile && gameState === 'charSelect') {
+            // 💡 PC 키보드에서도 사운드 풀 사용
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') { currentHoverChar = (currentHoverChar > 0) ? currentHoverChar - 1 : 6; updateCharHoverUI(); playSelectSound(); }
+            else if (e.code === 'ArrowRight' || e.code === 'KeyD') { currentHoverChar = (currentHoverChar < 6) ? currentHoverChar + 1 : 0; updateCharHoverUI(); playSelectSound(); }
+            else if (e.code === 'Enter' || e.code === 'Space') { selectCharacterAndStart(currentHoverChar); }
+        }
+        else if (gameState === 'playing') {
+            if (e.code === 'Space' && !isJumping && playerGroup) { velocityY = JUMP_SPEED; isJumping = true; fadeToAction('jump', 0.2); }
+        }
+        else if (gameState === 'bonusVideoWait') {
+            if (e.code === 'Space') {
+                document.getElementById('bonusVideo').style.display = 'none'; document.getElementById('bonusVideoPrompt').style.display = 'none'; restoreFromBonus();
+            }
+        }
+    });
+    document.addEventListener('keyup', (e) => keys[e.code] = false);
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    document.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 0) return;
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        
+        if (isMobile && bgmAudio.paused) bgmAudio.play().catch(e => {});
+
+        if (isMobile && gameState === 'title') {
+            if (currentAction) {
+                document.getElementById('titleScreen').style.display = 'none'; document.getElementById('charSelectScreen').style.display = 'flex';
+                gameState = 'charSelect'; playerGroup.visible = true; currentHoverChar = selectedCharacter; updateCharHoverUI();
+            }
+            return;
+        }
+
+        if (gameState === 'tutorial') {
+            handleTutorialTouch(touchStartX);
+            return;
+        }
+
+        if (isMobile && (gameState === 'gameover' || gameState === 'bonusVideoWait')) {
+            if(gameState === 'bonusVideoWait') {
+                document.getElementById('bonusVideo').style.display = 'none'; document.getElementById('bonusVideoPrompt').style.display = 'none'; restoreFromBonus();
+            } else {
+                if (!canRestart) return; 
+                resetGameToCharSelect();
+            }
+            return;
+        }
+
+        if (gameState === 'playing' && isMobile) {
+            if (e.target.id !== 'mobile-jump-btn') {
+                if (touchStartX < window.innerWidth / 2) { keys['ArrowLeft'] = true; } 
+                else { keys['ArrowRight'] = true; }
+            }
+        }
+    }, {passive: false});
+
+    document.addEventListener('touchend', (e) => {
+        keys['ArrowLeft'] = false; keys['ArrowRight'] = false;
+    }, {passive: false});
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+        const fpsRatio = delta * 75; 
+        
+        const isTimeStopped = (gameState === 'bonusEnding' || gameState === 'bonusVideoPlay' || gameState === 'bonusVideoWait');
+        
+        if (!isTimeStopped && gameState !== 'tutorial') {
+            if (mixer) mixer.update(delta);
+            updateSparks(delta); updateFireworks(delta); updateScatteredCoins(delta);
+        }
+
+        if (playerGroup && player) {
+            let ratio = bonusGaugeScore / BONUS_THRESHOLD; let glow = 0;
+            if (isBonusRound || isTimeStopped) glow = 0; 
+            else if (bonusGaugeScore >= 50) { let speed = 5 + ratio * 25; glow = (Math.sin(clock.getElapsedTime() * speed) * 0.5 + 0.5) * ratio; }
+            player.traverse((child) => { if (child.isMesh && child.material && child.material.emissive) { child.material.emissive.setHex(0xffffff); child.material.emissiveIntensity = glow; } });
+        }
+
+        if (gameState === 'title' && isMapLoaded) {
+            camera.position.set(0, 1.5, -8); camera.lookAt(0, 1.5, 20); spikeWall.visible = false; 
+        }
+        else if (gameState === 'charSelect' && playerGroup && isMapLoaded) {
+            camera.position.set(0, 1.5, -5); camera.lookAt(0, 1.0, 0);
+        }
+        else if (gameState === 'intro' && playerGroup && isMapLoaded) {
+            spikeWall.visible = true; 
+            introTimer += delta; let t_total = introTimer / introDuration; if (t_total > 1) t_total = 1;
+            const holdRatio = 0.5; 
+            const startPos1 = new THREE.Vector3(2.5, 2.0, -10); const startPos2 = new THREE.Vector3(1.5, 2.0, -5); const endPos = new THREE.Vector3(0, 2.0, playerGroup.position.z + 6.5);
+            const startLook1 = new THREE.Vector3(0, 3.0, -20); const startLook2 = new THREE.Vector3(0, 3.0, -15); const endLook = new THREE.Vector3(0, 2.0, playerGroup.position.z - 5);
+            let currentPos = new THREE.Vector3(); let currentLook = new THREE.Vector3();
+
+            if (t_total < holdRatio) { let t_hold = t_total / holdRatio; currentPos.lerpVectors(startPos1, startPos2, t_hold); currentLook.lerpVectors(startLook1, startLook2, t_hold); } 
+            else { let t_swoop = (t_total - holdRatio) / (1 - holdRatio); let ease = 1 - Math.pow(1 - t_swoop, 3); currentPos.lerpVectors(startPos2, endPos, ease); currentLook.lerpVectors(startLook2, endLook, ease); }
+
+            let shakeIntensity = 0.08; if (t_total > holdRatio) { shakeIntensity = 0.08 * (1 - ((t_total - holdRatio) / (1 - holdRatio))); }
+            camera.position.set(currentPos.x + (Math.random() - 0.5) * shakeIntensity, currentPos.y + (Math.random() - 0.5) * shakeIntensity, currentPos.z);
+            camera.lookAt(currentLook);
+
+            if (piggyRollGroup) piggyRollGroup.rotation.x += spikeWallSpeed * 0.8 * fpsRatio; 
+
+            if (t_total >= 1) {
+                if (isMobile && !hasDoneTutorial) {
+                    startMobileTutorial();
+                } else {
+                    const startMsg = document.getElementById('startMsg');
+                    startMsg.style.display = 'block';
+                    setTimeout(() => { startMsg.style.display = 'none'; }, 2000);
+                    gameState = 'playing';
+                    if (isMobile) document.getElementById('mobile-jump-btn').style.display = 'block';
+                }
+            }
+        } 
+        else if (gameState === 'playing' && playerGroup && isMapLoaded) {
+            if (isBonusRound) {
+                autoScoreTimer += delta; if (autoScoreTimer > 0.05) { score += 3; document.getElementById('score').innerText = score; autoScoreTimer = 0; }
+                if (Math.random() < 0.6) emitBonusCoins();
+                bonusTimer -= delta; if (bonusTimer <= 0) startBonusEnding();
+            }
+
+            playerGroup.position.z += currentSpeed * fpsRatio;
+            
+            let shakeX = 0; let shakeY = 0;
+            if (shakeTimer > 0) { shakeTimer -= delta; const intensity = 1.0 * (shakeTimer / 0.4); shakeX = (Math.random() - 0.5) * intensity; shakeY = (Math.random() - 0.5) * intensity; }
+            camera.position.set(shakeX, 2.0 + shakeY, playerGroup.position.z + 6.5); camera.lookAt(0, 2.0, playerGroup.position.z - 5);
+            
+            spikeWallSpeed = (currentSpeed > normalSpeed) ? 0.157 + (currentSpeed - normalSpeed) * 0.6 : 0.157;
+            spikeWall.position.z += spikeWallSpeed * fpsRatio;
+            if (piggyRollGroup) piggyRollGroup.rotation.x += spikeWallSpeed * 0.5 * fpsRatio; 
+
+            if (isBoosted) {
+                speedBoostTimer -= delta; currentSpeed += (boostTargetSpeed - currentSpeed) * 10 * delta; 
+                if (speedBoostTimer <= 0) {
+                    isBoosted = false; targetFov = 100; speedEffectUI.style.boxShadow = "inset 0 0 150px 20px rgba(0, 255, 255, 0)";
+                    if (!isJumping) fadeToAction(isBonusRound ? 'dance' : 'run', 0.2); 
+                }
+            } else {
+                if (currentSpeed < normalSpeed) currentSpeed += 0.001 * fpsRatio; else if (currentSpeed > normalSpeed) currentSpeed -= 0.005 * fpsRatio; 
+            }
+
+            if (Math.abs(camera.fov - targetFov) > 0.1) { camera.fov += (targetFov - camera.fov) * 12 * delta; camera.updateProjectionMatrix(); }
+            updateSpeedLines(delta, fpsRatio);
+
+            const activeFloors = isBonusRound ? bonusFloors : normalFloors; const activeChunkLength = isBonusRound ? bonusMapChunkLength : normalMapChunkLength;
+            activeFloors.forEach(floor => {
+                if(floor.position.z < playerGroup.position.z - (activeChunkLength * 1.5)) {
+                    let maxZ = activeFloors[0].position.z; activeFloors.forEach(f => { if(f.position.z > maxZ) maxZ = f.position.z; });
+                    floor.position.z = maxZ + (activeChunkLength + MAP_GAP_TWEAK); floor.position.x = floor.userData.fixedX; floor.position.y = floor.userData.fixedY; 
+                }
+            });
+
+            const moveSpeed = 0.18 * fpsRatio;
+            if((keys['ArrowLeft'] || keys['KeyA']) && playerGroup.position.x > -WALL_LIMIT) playerGroup.position.x -= moveSpeed;
+            if((keys['ArrowRight'] || keys['KeyD']) && playerGroup.position.x < WALL_LIMIT) playerGroup.position.x += moveSpeed;
+
+            playerLight.position.x = playerGroup.position.x; playerLight.position.y = playerGroup.position.y + 4; playerLight.position.z = playerGroup.position.z + 2;
+            
+            if (isJumping) velocityY += JUMP_GRAVITY * delta;
+            playerGroup.position.y += velocityY * delta;
+
+            if (playerGroup.position.y <= GROUND_Y + PLAYER_OFFSET_Y) { 
+                playerGroup.position.y = GROUND_Y + PLAYER_OFFSET_Y; velocityY = 0;
+                if (isJumping) { isJumping = false; fadeToAction(isBonusRound ? 'dance' : (isBoosted ? 'sprint' : 'run'), 0.2); }
+            }
+
+            let difficultyBonus = Math.min(score / 20000, 0.045); let currentSpawnChance = isBonusRound ? 0.08 : (0.023 + difficultyBonus); 
+            if(Math.random() < currentSpawnChance * fpsRatio) spawnObject();
+
+            for(let i = objects.length - 1; i >= 0; i--) {
+                const type = objects[i].userData.type;
+                if(['coin', 'can', 'controller', 'skateboard'].includes(type)) { objects[i].rotation.y += 0.05 * fpsRatio; } 
+                else if (type === 'warning') { objects[i].position.y = GROUND_Y + 4 + Math.sin(clock.getElapsedTime() * 10) * 0.3; objects[i].material.opacity = (Math.sin(clock.getElapsedTime() * 15) * 0.5) + 0.5; }
+                else if (type === 'warningText') { const parent = objects[i].userData.parentArrow; if (parent) { objects[i].position.y = parent.position.y + 1.5; objects[i].position.z = parent.position.z; objects[i].material.opacity = parent.material.opacity; } }
+
+                const playerCenter = playerGroup.position.clone().add(new THREE.Vector3(0, 1, 0));
+                let hitRadius = (type === 'obstacle') ? 1.5 * (PLAYER_SCALE / 0.01) : 1.2 * (PLAYER_SCALE / 0.01); 
+
+                if(playerCenter.distanceTo(objects[i].position) < hitRadius) {
+                    if (type === 'coin') {
+                        scene.remove(objects[i]); objects.splice(i, 1); 
+                        playCoinSound();
+                        
+                        comboCount++; let earnedScore = 10;
+                        if (comboCount >= 2) { earnedScore = 15; const comboMsg = document.getElementById('comboMsg'); comboMsg.innerText = comboCount + "COMBO!"; comboMsg.style.display = 'block'; comboMsg.style.animation = 'none'; void comboMsg.offsetWidth; comboMsg.style.animation = 'comboPop 0.3s ease-out'; }
+                        score += earnedScore; document.getElementById('score').innerText = score;
+                        if (!isBonusRound) { bonusGaugeScore += earnedScore; updateGaugeUI(); if (bonusGaugeScore >= BONUS_THRESHOLD) startBonusRound(); }
+                        continue;
+                    } 
+                    else if (type === 'controller') { scene.remove(objects[i]); objects.splice(i, 1); score += 20; document.getElementById('score').innerText = score; continue; }
+                    else if (type === 'skateboard') { scene.remove(objects[i]); objects.splice(i, 1); score += 30; document.getElementById('score').innerText = score; continue; }
+                    else if (type === 'can') {
+                        scene.remove(objects[i]); objects.splice(i, 1); isBoosted = true; speedBoostTimer = boostDuration; targetFov = 110; speedEffectUI.style.boxShadow = "inset 0 0 150px 30px rgba(0, 255, 255, 0.7)"; 
+                        if (!isJumping && !isBonusRound) fadeToAction('sprint', 0.2); 
+                        score += 20; document.getElementById('score').innerText = score;
+                        if (!isBonusRound) { bonusGaugeScore += 20; updateGaugeUI(); if (bonusGaugeScore >= BONUS_THRESHOLD) startBonusRound(); }
+                        continue;
+                    } 
+                    else if (type === 'obstacle') {
+                        if (playerGroup.position.y < GROUND_Y + PLAYER_OFFSET_Y + 1.8) { 
+                            scene.remove(objects[i]); objects.splice(i, 1); comboCount = 0; document.getElementById('comboMsg').style.display = 'none';
+// 💡 여기에 ouch.mp3 재생 코드 추가
+                            ouchAudio.currentTime = 0;
+                            ouchAudio.play().catch(e => {});
+                            isBoosted = false; speedBoostTimer = 0; targetFov = 100; speedEffectUI.style.boxShadow = "inset 0 0 150px 20px rgba(0, 255, 255, 0)";
+                            if (!isJumping) fadeToAction(isBonusRound ? 'dance' : 'run', 0.2); 
+                            currentSpeed = normalSpeed * 0.2; shakeTimer = 0.4;
+                            document.getElementById('game-container').style.backgroundColor = "#550000"; setTimeout(() => document.getElementById('game-container').style.backgroundColor = "transparent", 100);
+                            scatterCoins();
+                        }
+                    }
+                }
+                
+                if(objects[i] && objects[i].position.z < playerGroup.position.z - 20) { scene.remove(objects[i]); objects.splice(i, 1); }
+            }
+            
+            if (spikeWall.position.z > playerGroup.position.z - 1.0 && spikeWall.visible) {
+                gameState = 'gameover'; 
+                
+                canRestart = false; 
+                setTimeout(() => { canRestart = true; }, 1500); 
+
+                document.getElementById('gameOverMsg').style.display = 'block';
+                const wastedVideo = document.getElementById('wastedVideo'); wastedVideo.style.display = 'block'; wastedVideo.currentTime = 0; wastedVideo.play().catch(e => console.log(e));
+                if(!isMobile) document.getElementById('controls-img').style.display = 'none'; 
+                document.getElementById('mobile-jump-btn').style.display = 'none';
+                if(mixer) mixer.timeScale = 0; 
+                bgmAudio.pause(); gameOverAudio.currentTime = 0; gameOverAudio.play().catch(err=>{});
+            }
+        }
+        else if (gameState === 'bonusEnding') {
+            absorbTimer -= delta;
+            if (absorbTimer > 0) {
+                const t = 1.0 - (absorbTimer / 0.5); const ease = t * t * t; const positions = absorbParticles.geometry.attributes.position.array; const target = new THREE.Vector3(playerGroup.position.x, playerGroup.position.y + 3, playerGroup.position.z);
+                for(let i=0; i < absorbCount; i++) { const currentPos = new THREE.Vector3().copy(abStart[i]).lerp(target, ease); positions[i*3] = currentPos.x; positions[i*3+1] = currentPos.y; positions[i*3+2] = currentPos.z; }
+                absorbParticles.geometry.attributes.position.needsUpdate = true;
+            } else {
+                absorbParticles.material.opacity = 0; gameState = 'bonusVideoPlay';
+                if (availableBonusVideos.length === 0) availableBonusVideos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+                const randomIndex = Math.floor(Math.random() * availableBonusVideos.length); 
+                const vidNum = availableBonusVideos.splice(randomIndex, 1)[0]; 
+                
+                const videoSuffix = isMobile ? '_mobile.mp4' : '.mp4';
+                
+                const vidEl = document.getElementById('bonusVideo'); 
+                vidEl.src = `bonus${vidNum}${videoSuffix}`; 
+                vidEl.style.display = 'block'; 
+                vidEl.play().catch(e => console.log("Video Play Error:", e));
+                vidEl.onended = () => { gameState = 'bonusVideoWait'; document.getElementById('bonusVideoPrompt').style.display = 'block'; };
+            }
+        }
+        
+        if (typeof composer !== 'undefined') composer.render(); else renderer.render(scene, camera);
+    }
+    animate();
+</script>
+</body>
+</html>
