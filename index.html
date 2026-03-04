@@ -269,18 +269,17 @@
     let lastCoinTime = 0;
 
     function playCoinSound() {
+        // 💥 사장님의 결단! 모바일 환경에서는 코인 소리를 아예 무시하고 쾌적함을 챙깁니다!
+        if (isMobile) return; 
+
         const now = Date.now();
-        // 💡 쿨타임을 0.05초(50ms)로 살짝 줄여서 연속 재생이 더 잘 되도록 합니다.
         if (now - lastCoinTime < 50) return; 
         lastCoinTime = now;
 
         const audio = coinAudioPool[coinAudioIndex];
-        
-        // 만약 오디오가 재생 중이면 처음으로 돌려버리고 틉니다 (모바일 끊김 방지)
         if (!audio.paused) {
             audio.currentTime = 0;
         }
-        
         audio.play().catch(e => { console.log("코인 소리 에러:", e) }); 
         
         coinAudioIndex = (coinAudioIndex + 1) % COIN_POOL_SIZE;
