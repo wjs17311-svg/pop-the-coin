@@ -262,11 +262,26 @@
     let coinAudioIndex = 0;
 
     function playCoinSound() {
+        const coinAudioPool = [];
+    const COIN_POOL_SIZE = 5; 
+    for (let i = 0; i < COIN_POOL_SIZE; i++) {
+        const audio = new Audio('coin sound.mp3');
+        audio.preload = 'auto';
+        coinAudioPool.push(audio);
+    }
+    let coinAudioIndex = 0;
+    let lastCoinTime = 0; // 💡 소리 재생 쿨타임용 타이머 추가
+
+    function playCoinSound() {
+        const now = Date.now();
+        // 💡 0.08초(80ms) 이내에 연속으로 먹은 코인은 소리 연산을 생략합니다. (핵심!)
+        if (now - lastCoinTime < 80) return; 
+        lastCoinTime = now;
+
         const audio = coinAudioPool[coinAudioIndex];
         audio.currentTime = 0;
         audio.play().catch(e => {});
         coinAudioIndex = (coinAudioIndex + 1) % COIN_POOL_SIZE;
-    }
 
     // 💡 2. 선택음(SELECT sound) 다중 생성 풀 (딜레이 방지)
     const selectAudioPool = [];
@@ -1283,12 +1298,24 @@
                         playCoinSound();
                         
                         comboCount++; let earnedScore = 10;
-                        if (comboCount >= 2) { earnedScore = 15; const comboMsg = document.getElementById('comboMsg'); comboMsg.innerText = comboCount + "COMBO!"; comboMsg.style.display = 'block'; comboMsg.style.animation = 'none';
-requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-        comboMsg.style.animation = 'comboPop 0.3s ease-out';
-    });
-}); comboMsg.style.animation = 'comboPop 0.3s ease-out'; }
+                        if (comboCount >= 2) { 
+                            earnedScore = 15; 
+                            const comboMsg = document.getElementById('comboMsg'); 
+                            
+                            // 💡 렉 방지: 새로 띄울 글자와 현재 글자가 다를 때만 화면을 다시 그리게 만듭니다.
+                            const newComboText = comboCount + "COMBO!";
+                            if (comboMsg.innerText !== newComboText) {
+                                comboMsg.innerText = newComboText;
+                            }
+                            
+                            comboMsg.style.display = 'block'; 
+                            comboMsg.style.animation = 'none'; 
+                            requestAnimationFrame(() => {
+                                requestAnimationFrame(() => {
+                                    comboMsg.style.animation = 'comboPop 0.3s ease-out';
+                                });
+                            });
+                        }
                         score += earnedScore; document.getElementById('score').innerText = score;
                         if (!isBonusRound) { bonusGaugeScore += earnedScore; updateGaugeUI(); if (bonusGaugeScore >= BONUS_THRESHOLD) startBonusRound(); }
                         continue;
