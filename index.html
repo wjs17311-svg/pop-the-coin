@@ -1077,8 +1077,16 @@
     
     document.addEventListener('keydown', (e) => {
         keys[e.code] = true;
-        if (e.code === 'KeyR' && ['playing', 'gameover', 'intro', 'bonusEnding', 'bonusVideoPlay', 'bonusVideoWait'].includes(gameState)) {
-            if (gameState === 'gameover' && !canRestart) return; 
+
+        // 💡 1. 게임오버 상태일 때는 '아무 키'나 눌러도 넘어가도록 분리!
+        if (gameState === 'gameover') {
+            if (!canRestart) return; // 1.5초 대기 시간 체크
+            resetGameToCharSelect();
+            return; // 아래 코드 무시
+        }
+
+        // 💡 2. R키를 누르면 플레이 중에도 강제 재시작 (게임오버 상태는 위에서 처리했으므로 제외)
+        if (e.code === 'KeyR' && ['playing', 'intro', 'bonusEnding', 'bonusVideoPlay', 'bonusVideoWait'].includes(gameState)) {
             resetGameToCharSelect();
         }
         else if (!isMobile && gameState === 'title') {
