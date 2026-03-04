@@ -251,18 +251,8 @@
     const cheerAudio = document.getElementById('cheerAudio');
     const ouchAudio = document.getElementById('ouchAudio');
 
-    // 💡 1. 동전 사운드 풀 (딜레이 방지)
+   // 💡 1. 동전 사운드 풀 (딜레이 방지 + 모바일 렉 방지 쿨타임 추가)
     const coinAudioPool = [];
-    const COIN_POOL_SIZE = 5; 
-    for (let i = 0; i < COIN_POOL_SIZE; i++) {
-        const audio = new Audio('coin sound.mp3');
-        audio.preload = 'auto';
-        coinAudioPool.push(audio);
-    }
-    let coinAudioIndex = 0;
-
-    function playCoinSound() {
-        const coinAudioPool = [];
     const COIN_POOL_SIZE = 5; 
     for (let i = 0; i < COIN_POOL_SIZE; i++) {
         const audio = new Audio('coin sound.mp3');
@@ -274,7 +264,7 @@
 
     function playCoinSound() {
         const now = Date.now();
-        // 💡 0.08초(80ms) 이내에 연속으로 먹은 코인은 소리 연산을 생략합니다. (핵심!)
+        // 💡 0.08초(80ms) 이내에 연속으로 먹은 코인은 소리 연산을 생략합니다.
         if (now - lastCoinTime < 80) return; 
         lastCoinTime = now;
 
@@ -282,7 +272,9 @@
         audio.currentTime = 0;
         audio.play().catch(e => {});
         coinAudioIndex = (coinAudioIndex + 1) % COIN_POOL_SIZE;
+    }
 
+   
     // 💡 2. 선택음(SELECT sound) 다중 생성 풀 (딜레이 방지)
     const selectAudioPool = [];
     const SELECT_POOL_SIZE = 3; 
