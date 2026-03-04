@@ -302,39 +302,7 @@
         selectAudioIndex = (selectAudioIndex + 1) % SELECT_POOL_SIZE;
     }
 
-    // 💡 [핵심] 모바일 사파리 오디오 잠금 '조용하게' 강제 해제!
-    function unlockAllAudios() {
-        const allAudios = [
-            bgmAudio, gameOverAudio, cheerAudio, ouchAudio, 
-            ...coinAudioPool, ...selectAudioPool
-        ];
-        
-        allAudios.forEach(audio => {
-            // 💥 1. 아이폰은 볼륨0이 안 먹히므로 아예 '음소거(Muted)'를 시켜버립니다!
-            audio.muted = true; 
-            
-            const playPromise = audio.play();
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    // 💥 2. 브라우저가 "어? 터치해서 틀었네?" 하고 허락하면, 재빨리 음소거를 풀어줍니다.
-                    audio.muted = false; 
-                }).catch(e => {});
-            }
-        });
-
-        // 한 번 해제했으면 이벤트 리스너 제거
-        document.removeEventListener('touchstart', unlockAllAudios);
-        document.removeEventListener('mousedown', unlockAllAudios);
-        document.removeEventListener('keydown', unlockAllAudios);
-        console.log("완벽하게 조용한 오디오 잠금 해제 완료!");
-    }
-
-    document.addEventListener('touchstart', unlockAllAudios, { once: true });
-    document.addEventListener('mousedown', unlockAllAudios, { once: true });
-    document.addEventListener('keydown', unlockAllAudios, { once: true });
-    // 💡 3. 캐릭터 비디오 7개 미리 로드 풀 (검은 화면 및 로딩 딜레이 0초)
+        // 💡 3. 캐릭터 비디오 7개 미리 로드 풀 (검은 화면 및 로딩 딜레이 0초)
     const charNames = ['YUSEOP', 'HYUNJUN', 'JUNPYO', 'LIN', 'PAN', 'MIRAKU', 'GIHYUN'];
     const previewVideos = [];
     const charSelectScreen = document.getElementById('charSelectScreen');
