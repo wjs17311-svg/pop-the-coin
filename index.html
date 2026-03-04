@@ -1316,7 +1316,7 @@
                 if(playerCenter.distanceTo(objects[i].position) < hitRadius) {
                     if (type === 'coin') {
                         scene.remove(objects[i]); objects.splice(i, 1); 
-                        playCoinSound();
+                        //playCoinSound();
                         
                         comboCount++; let earnedScore = 10;
                         if (comboCount >= 2) { 
