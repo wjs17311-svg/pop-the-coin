@@ -252,46 +252,44 @@
     const ouchAudio = document.getElementById('ouchAudio');
 
    // 💡 1. 동전 사운드 풀 (딜레이 방지 + 모바일 렉 방지 쿨타임 추가)
-    const coinAudioPool = [];
-    const COIN_POOL_SIZE = 5; 
-    for (let i = 0; i < COIN_POOL_SIZE; i++) {
-        const audio = new Audio('coin sound.mp3');
-        audio.preload = 'auto';
-        coinAudioPool.push(audio);
-    }
-    let coinAudioIndex = 0;
-    let lastCoinTime = 0; // 💡 소리 재생 쿨타임용 타이머 추가
+   const coinAudioPool = [];
+   const COIN_POOL_SIZE = 5; 
+   for (let i = 0; i < COIN_POOL_SIZE; i++) {
+       const audio = new Audio('coin sound.mp3');
+       audio.preload = 'auto';
+       coinAudioPool.push(audio);
+   }
+   let coinAudioIndex = 0;
+   let lastCoinTime = 0; // 💡 소리 재생 쿨타임용 타이머 추가
 
-    function playCoinSound() {
-        const now = Date.now();
-        // 💡 0.08초(80ms) 이내에 연속으로 먹은 코인은 소리 연산을 생략합니다.
-        if (now - lastCoinTime < 80) return; 
-        lastCoinTime = now;
+   function playCoinSound() {
+       const now = Date.now();
+       // 💡 0.08초(80ms) 이내에 연속으로 먹은 코인은 소리 연산을 생략합니다. (핵심!)
+       if (now - lastCoinTime < 80) return; 
+       lastCoinTime = now;
 
-        const audio = coinAudioPool[coinAudioIndex];
-        audio.currentTime = 0;
-        audio.play().catch(e => {});
-        coinAudioIndex = (coinAudioIndex + 1) % COIN_POOL_SIZE;
-    }
+       const audio = coinAudioPool[coinAudioIndex];
+       audio.currentTime = 0;
+       audio.play().catch(e => {});
+       coinAudioIndex = (coinAudioIndex + 1) % COIN_POOL_SIZE;
+   }
 
-   
-    // 💡 2. 선택음(SELECT sound) 다중 생성 풀 (딜레이 방지)
-    const selectAudioPool = [];
-    const SELECT_POOL_SIZE = 3; 
-    for (let i = 0; i < SELECT_POOL_SIZE; i++) {
-        const audio = new Audio('SELECT sound.mp3');
-        audio.preload = 'auto';
-        selectAudioPool.push(audio);
-    }
-    let selectAudioIndex = 0;
+   // 💡 2. 선택음(SELECT sound) 다중 생성 풀 (딜레이 방지)
+   const selectAudioPool = [];
+   const SELECT_POOL_SIZE = 3; 
+   for (let i = 0; i < SELECT_POOL_SIZE; i++) {
+       const audio = new Audio('SELECT sound.mp3');
+       audio.preload = 'auto';
+       selectAudioPool.push(audio);
+   }
+   let selectAudioIndex = 0;
 
-    function playSelectSound() {
-        const audio = selectAudioPool[selectAudioIndex];
-        audio.currentTime = 0;
-        audio.play().catch(e => {});
-        selectAudioIndex = (selectAudioIndex + 1) % SELECT_POOL_SIZE;
-    }
-
+   function playSelectSound() {
+       const audio = selectAudioPool[selectAudioIndex];
+       audio.currentTime = 0;
+       audio.play().catch(e => {});
+       selectAudioIndex = (selectAudioIndex + 1) % SELECT_POOL_SIZE;
+   }
     // 💡 3. 캐릭터 비디오 7개 미리 로드 풀 (검은 화면 및 로딩 딜레이 0초)
     const charNames = ['YUSEOP', 'HYUNJUN', 'JUNPYO', 'LIN', 'PAN', 'MIRAKU', 'GIHYUN'];
     const previewVideos = [];
