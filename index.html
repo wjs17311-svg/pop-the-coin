@@ -257,28 +257,43 @@
     const cheerAudio = document.getElementById('cheerAudio');
     const ouchAudio = document.getElementById('ouchAudio');
 
-   // 💡 1. 동전 사운드 풀 (딜레이 방지 + 모바일 렉 방지 쿨타임 추가)
-   const coinAudioPool = [];
-   const COIN_POOL_SIZE = 5; 
-   for (let i = 0; i < COIN_POOL_SIZE; i++) {
-       const audio = new Audio('coin sound.mp3');
-       audio.preload = 'auto';
-       coinAudioPool.push(audio);
-   }
-   let coinAudioIndex = 0;
-   let lastCoinTime = 0; // 💡 소리 재생 쿨타임용 타이머 추가
+   // 💡 1. 모바일 렉 완전 해결: 게임 전용 초저지연 사운드 엔진(Web Audio API)
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioContext();
+    let coinAudioBuffer = null;
+    let lastCoinTime = 0;
 
-   function playCoinSound() {
-       const now = Date.now();
-       // 💡 0.08초(80ms) 이내에 연속으로 먹은 코인은 소리 연산을 생략합니다. (핵심!)
-       if (now - lastCoinTime < 80) return; 
-       lastCoinTime = now;
+    // 동전 사운드를 핸드폰 메모리(RAM)에 미리 구워버립니다 (로딩 딜레이 0초)
+    fetch('coin sound.mp3')
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => {
+            coinAudioBuffer = audioBuffer;
+        })
+        .catch(e => console.log("사운드 로드 에러"));
 
-       const audio = coinAudioPool[coinAudioIndex];
-       audio.currentTime = 0;
-       audio.play().catch(e => {});
-       coinAudioIndex = (coinAudioIndex + 1) % COIN_POOL_SIZE;
-   }
+    // 애플(아이폰)의 깐깐한 오디오 정책을 뚫기 위한 잠금 해제 코드
+    const unlockAudio = () => {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        document.removeEventListener('touchstart', unlockAudio);
+        document.removeEventListener('keydown', unlockAudio);
+    };
+    document.addEventListener('touchstart', unlockAudio);
+    document.addEventListener('keydown', unlockAudio);
+
+    // 렉 0%로 동전 소리를 재생하는 함수
+    function playCoinSound() {
+        const now = Date.now();
+        if (now - lastCoinTime < 50) return; // 0.05초 연타 방지
+        lastCoinTime = now;
+
+        if (coinAudioBuffer && audioCtx.state === 'running') {
+            const source = audioCtx.createBufferSource();
+            source.buffer = coinAudioBuffer;
+            source.connect(audioCtx.destination);
+            source.start(0);
+        }
+    }
 
    // 💡 2. 선택음(SELECT sound) 다중 생성 풀 (딜레이 방지)
    const selectAudioPool = [];
@@ -1316,7 +1331,7 @@
                 if(playerCenter.distanceTo(objects[i].position) < hitRadius) {
                     if (type === 'coin') {
                         scene.remove(objects[i]); objects.splice(i, 1); 
-                        //playCoinSound();
+                        playCoinSound();
                         
                         comboCount++; let earnedScore = 10;
                         if (comboCount >= 2) { 
