@@ -258,60 +258,48 @@
     const cheerAudio = document.getElementById('cheerAudio');
     const ouchAudio = document.getElementById('ouchAudio');
 
-   // 💡 1. 모바일 렉 완전 해결: 게임 전용 초저지연 사운드 엔진(Web Audio API)
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    const audioCtx = new AudioContext();
-    let coinAudioBuffer = null;
-    let lastCoinTime = 0;
+  // 💡 1. 동전 사운드 풀 (사장님의 결단! 모바일 소리 완벽 차단)
+    const coinAudioPool = [];
+    const COIN_POOL_SIZE = 5; 
+    for (let i = 0; i < COIN_POOL_SIZE; i++) {
+        const audio = new Audio('coin sound.mp3');
+        audio.preload = 'auto';
+        coinAudioPool.push(audio);
+    }
+    let coinAudioIndex = 0;
+    let lastCoinTime = 0; 
 
-    // 동전 사운드를 핸드폰 메모리(RAM)에 미리 구워버립니다 (로딩 딜레이 0초)
-    fetch('coin sound.mp3')
-        .then(response => response.arrayBuffer())
-        .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
-        .then(audioBuffer => {
-            coinAudioBuffer = audioBuffer;
-        })
-        .catch(e => console.log("사운드 로드 에러"));
-
-    // 애플(아이폰)의 깐깐한 오디오 정책을 뚫기 위한 잠금 해제 코드
-    const unlockAudio = () => {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        document.removeEventListener('touchstart', unlockAudio);
-        document.removeEventListener('keydown', unlockAudio);
-    };
-    document.addEventListener('touchstart', unlockAudio);
-    document.addEventListener('keydown', unlockAudio);
-
-    // 렉 0%로 동전 소리를 재생하는 함수
     function playCoinSound() {
+        // 💥 모바일 환경에서는 렉 방지를 위해 소리 자체를 실행하지 않습니다!
+        if (isMobile) return; 
+
         const now = Date.now();
-        if (now - lastCoinTime < 50) return; // 0.05초 연타 방지
+        if (now - lastCoinTime < 50) return; 
         lastCoinTime = now;
 
-        if (coinAudioBuffer && audioCtx.state === 'running') {
-            const source = audioCtx.createBufferSource();
-            source.buffer = coinAudioBuffer;
-            source.connect(audioCtx.destination);
-            source.start(0);
-        }
+        const audio = coinAudioPool[coinAudioIndex];
+        if (!audio.paused) audio.currentTime = 0;
+        audio.play().catch(e => {}); 
+        
+        coinAudioIndex = (coinAudioIndex + 1) % COIN_POOL_SIZE;
     }
 
-   // 💡 2. 선택음(SELECT sound) 다중 생성 풀 (딜레이 방지)
-   const selectAudioPool = [];
-   const SELECT_POOL_SIZE = 3; 
-   for (let i = 0; i < SELECT_POOL_SIZE; i++) {
-       const audio = new Audio('SELECT sound.mp3');
-       audio.preload = 'auto';
-       selectAudioPool.push(audio);
-   }
-   let selectAudioIndex = 0;
+    // 💡 2. 선택음(SELECT sound) 다중 생성 풀 
+    const selectAudioPool = [];
+    const SELECT_POOL_SIZE = 3; 
+    for (let i = 0; i < SELECT_POOL_SIZE; i++) {
+        const audio = new Audio('SELECT sound.mp3');
+        audio.preload = 'auto';
+        selectAudioPool.push(audio);
+    }
+    let selectAudioIndex = 0;
 
-   function playSelectSound() {
-       const audio = selectAudioPool[selectAudioIndex];
-       audio.currentTime = 0;
-       audio.play().catch(e => {});
-       selectAudioIndex = (selectAudioIndex + 1) % SELECT_POOL_SIZE;
-   }
+    function playSelectSound() {
+        const audio = selectAudioPool[selectAudioIndex];
+        if (!audio.paused) audio.currentTime = 0;
+        audio.play().catch(e => {});
+        selectAudioIndex = (selectAudioIndex + 1) % SELECT_POOL_SIZE;
+    }
 
     // 💡 3. 캐릭터 비디오 7개 미리 로드 풀 (검은 화면 및 로딩 딜레이 0초)
     const charNames = ['YUSEOP', 'HYUNJUN', 'JUNPYO', 'LIN', 'PAN', 'MIRAKU', 'GIHYUN'];
