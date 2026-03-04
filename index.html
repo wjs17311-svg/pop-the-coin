@@ -257,47 +257,52 @@
     const cheerAudio = document.getElementById('cheerAudio');
     const ouchAudio = document.getElementById('ouchAudio');
 
-   // 💡 1. 모바일 렉 완전 해결: 게임 전용 초저지연 사운드 엔진(Web Audio API)
-    // 브라우저 호환성을 위해 다양한 형태의 오디오 컨텍스트를 시도합니다.
+   // 💡 1. 모바일 렉 완전 해결 및 사운드 강제 로딩 (Web Audio API)
     const AudioContext = window.AudioContext || window.webkitAudioContext;
-    let audioCtx = null;
+    let audioCtx = new AudioContext(); // 💡 처음부터 바로 생성!
     let coinAudioBuffer = null;
     let lastCoinTime = 0;
 
-    // 게임 시작 시(최초 터치 시)에만 오디오 엔진을 깨우는 강력한 함수
-    function initAudioEngine() {
-        if (!audioCtx) {
-            audioCtx = new AudioContext();
-        }
-        
-        // 정지된 상태라면 강제로 깨웁니다.
+    // 💡 게임 로딩 시작과 동시에 소리 파일을 무조건 미리 다운로드 받습니다.
+    function loadCoinSound() {
+        fetch('coin sound.mp3')
+            .then(response => response.arrayBuffer())
+            .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
+            .then(audioBuffer => {
+                coinAudioBuffer = audioBuffer;
+                console.log("코인 사운드 장전 완료!");
+            })
+            .catch(e => console.log("사운드 로드 에러:", e));
+    }
+    loadCoinSound(); // 함수 바로 실행
+
+    // 애플(아이폰)의 오디오 잠금을 해제하는 함수
+    function unlockAudioEngine() {
         if (audioCtx.state === 'suspended') {
             audioCtx.resume().then(() => {
-                console.log("오디오 엔진 성공적으로 기상!");
+                console.log("오디오 엔진 잠금 해제!");
             });
         }
+        
+        // 아주 짧은 무음(Silence)을 강제로 한 번 재생해서 브라우저를 속입니다.
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        gainNode.gain.value = 0; // 볼륨 0 (무음)
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.start(0);
+        oscillator.stop(0.01);
 
-        // 버퍼가 비어있으면 그때 소리 파일을 불러옵니다.
-        if (!coinAudioBuffer) {
-            fetch('coin sound.mp3')
-                .then(response => response.arrayBuffer())
-                .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
-                .then(audioBuffer => {
-                    coinAudioBuffer = audioBuffer;
-                })
-                .catch(e => console.log("사운드 로드 에러:", e));
-        }
-
-        // 엔진이 성공적으로 켜졌으면 이벤트 리스너를 지워서 불필요한 연산을 줄입니다.
-        document.removeEventListener('touchstart', initAudioEngine);
-        document.removeEventListener('mousedown', initAudioEngine);
-        document.removeEventListener('keydown', initAudioEngine); // 💡 키보드 해제 추가
+        // 한 번 해제했으면 이벤트 지우기
+        document.removeEventListener('touchstart', unlockAudioEngine);
+        document.removeEventListener('mousedown', unlockAudioEngine);
+        document.removeEventListener('keydown', unlockAudioEngine);
     }
 
-    // 모바일 터치나 PC 클릭, 혹은 '아무 키나 눌렀을 때(Any Key)' 오디오 엔진 강제 초기화!
-    document.addEventListener('touchstart', initAudioEngine, { once: true });
-    document.addEventListener('mousedown', initAudioEngine, { once: true });
-    document.addEventListener('keydown', initAudioEngine, { once: true }); // 💡 키보드 입력 추가
+    // 유저가 화면을 건드리는 '어떤' 행동이든 무조건 오디오 잠금 해제를 시도합니다!
+    document.addEventListener('touchstart', unlockAudioEngine, { once: true });
+    document.addEventListener('mousedown', unlockAudioEngine, { once: true });
+    document.addEventListener('keydown', unlockAudioEngine, { once: true });
 
     // 렉 0%로 동전 소리를 재생하는 함수
     function playCoinSound() {
@@ -305,7 +310,6 @@
         if (now - lastCoinTime < 50) return; // 0.05초 연타 방지
         lastCoinTime = now;
 
-        // 엔진이 켜져 있고 파일이 로드되었을 때만 실행
         if (audioCtx && audioCtx.state === 'running' && coinAudioBuffer) {
             const source = audioCtx.createBufferSource();
             source.buffer = coinAudioBuffer;
