@@ -377,7 +377,7 @@
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x0b0c10, 0.015); 
 
-    let baseFov = isMobile ? 115 : 100;
+    let baseFov = isMobile ? 105 : 100;
     const camera = new THREE.PerspectiveCamera(baseFov, targetAspect, 0.1, 1000);
     const speedEffectUI = document.getElementById('speed-effect');
 
