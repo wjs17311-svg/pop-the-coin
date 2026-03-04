@@ -291,11 +291,13 @@
         // 엔진이 성공적으로 켜졌으면 이벤트 리스너를 지워서 불필요한 연산을 줄입니다.
         document.removeEventListener('touchstart', initAudioEngine);
         document.removeEventListener('mousedown', initAudioEngine);
+        document.removeEventListener('keydown', initAudioEngine); // 💡 키보드 해제 추가
     }
 
-    // 모바일 터치나 PC 클릭 시 오디오 엔진을 강제로 초기화!
+    // 모바일 터치나 PC 클릭, 혹은 '아무 키나 눌렀을 때(Any Key)' 오디오 엔진 강제 초기화!
     document.addEventListener('touchstart', initAudioEngine, { once: true });
     document.addEventListener('mousedown', initAudioEngine, { once: true });
+    document.addEventListener('keydown', initAudioEngine, { once: true }); // 💡 키보드 입력 추가
 
     // 렉 0%로 동전 소리를 재생하는 함수
     function playCoinSound() {
