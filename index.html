@@ -1283,7 +1283,12 @@
                         playCoinSound();
                         
                         comboCount++; let earnedScore = 10;
-                        if (comboCount >= 2) { earnedScore = 15; const comboMsg = document.getElementById('comboMsg'); comboMsg.innerText = comboCount + "COMBO!"; comboMsg.style.display = 'block'; comboMsg.style.animation = 'none'; void comboMsg.offsetWidth; comboMsg.style.animation = 'comboPop 0.3s ease-out'; }
+                        if (comboCount >= 2) { earnedScore = 15; const comboMsg = document.getElementById('comboMsg'); comboMsg.innerText = comboCount + "COMBO!"; comboMsg.style.display = 'block'; comboMsg.style.animation = 'none';
+requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+        comboMsg.style.animation = 'comboPop 0.3s ease-out';
+    });
+}); comboMsg.style.animation = 'comboPop 0.3s ease-out'; }
                         score += earnedScore; document.getElementById('score').innerText = score;
                         if (!isBonusRound) { bonusGaugeScore += earnedScore; updateGaugeUI(); if (bonusGaugeScore >= BONUS_THRESHOLD) startBonusRound(); }
                         continue;
