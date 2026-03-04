@@ -377,7 +377,8 @@
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x0b0c10, 0.015); 
 
-    const camera = new THREE.PerspectiveCamera(100, targetAspect, 0.1, 1000);
+    let baseFov = isMobile ? 115 : 100;
+    const camera = new THREE.PerspectiveCamera(baseFov, targetAspect, 0.1, 1000);
     const speedEffectUI = document.getElementById('speed-effect');
 
     const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
@@ -443,7 +444,7 @@
     let speedBoostTimer = 0; 
     const boostDuration = 3.0; 
     const boostTargetSpeed = 0.35;
-    let targetFov = 100; 
+    let targetFov = baseFov; 
 
     let shakeTimer = 0;
 
@@ -583,7 +584,7 @@
         availableBonusVideos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
 
         currentSpeed = normalSpeed; 
-        isBoosted = false; speedBoostTimer = 0; targetFov = 100; shakeTimer = 0; 
+        isBoosted = false; speedBoostTimer = 0; targetFov = baseFov; shakeTimer = 0; 
         speedEffectUI.style.boxShadow = "inset 0 0 150px 20px rgba(0, 255, 255, 0)";
         velocityY = 0; isJumping = false; autoScoreTimer = 0;
 
@@ -1232,7 +1233,7 @@
             if (isBoosted) {
                 speedBoostTimer -= delta; currentSpeed += (boostTargetSpeed - currentSpeed) * 10 * delta; 
                 if (speedBoostTimer <= 0) {
-                    isBoosted = false; targetFov = 100; speedEffectUI.style.boxShadow = "inset 0 0 150px 20px rgba(0, 255, 255, 0)";
+                    isBoosted = false; targetFov = baseFov; speedEffectUI.style.boxShadow = "inset 0 0 150px 20px rgba(0, 255, 255, 0)";
                     if (!isJumping) fadeToAction(isBonusRound ? 'dance' : 'run', 0.2); 
                 }
             } else {
@@ -1290,7 +1291,7 @@
                     else if (type === 'controller') { scene.remove(objects[i]); objects.splice(i, 1); score += 20; document.getElementById('score').innerText = score; continue; }
                     else if (type === 'skateboard') { scene.remove(objects[i]); objects.splice(i, 1); score += 30; document.getElementById('score').innerText = score; continue; }
                     else if (type === 'can') {
-                        scene.remove(objects[i]); objects.splice(i, 1); isBoosted = true; speedBoostTimer = boostDuration; targetFov = 110; speedEffectUI.style.boxShadow = "inset 0 0 150px 30px rgba(0, 255, 255, 0.7)"; 
+                        scene.remove(objects[i]); objects.splice(i, 1); isBoosted = true; speedBoostTimer = boostDuration; targetFov = baseFov + 10; speedEffectUI.style.boxShadow = "inset 0 0 150px 30px rgba(0, 255, 255, 0.7)"; 
                         if (!isJumping && !isBonusRound) fadeToAction('sprint', 0.2); 
                         score += 20; document.getElementById('score').innerText = score;
                         if (!isBonusRound) { bonusGaugeScore += 20; updateGaugeUI(); if (bonusGaugeScore >= BONUS_THRESHOLD) startBonusRound(); }
@@ -1302,7 +1303,7 @@
 // 💡 여기에 ouch.mp3 재생 코드 추가
                             ouchAudio.currentTime = 0;
                             ouchAudio.play().catch(e => {});
-                            isBoosted = false; speedBoostTimer = 0; targetFov = 100; speedEffectUI.style.boxShadow = "inset 0 0 150px 20px rgba(0, 255, 255, 0)";
+                            isBoosted = false; speedBoostTimer = 0; targetFov = baseFov; speedEffectUI.style.boxShadow = "inset 0 0 150px 20px rgba(0, 255, 255, 0)";
                             if (!isJumping) fadeToAction(isBonusRound ? 'dance' : 'run', 0.2); 
                             currentSpeed = normalSpeed * 0.2; shakeTimer = 0.4;
                             document.getElementById('game-container').style.backgroundColor = "#550000"; setTimeout(() => document.getElementById('game-container').style.backgroundColor = "transparent", 100);
