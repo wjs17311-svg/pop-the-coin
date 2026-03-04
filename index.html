@@ -303,8 +303,7 @@
         selectAudioIndex = (selectAudioIndex + 1) % SELECT_POOL_SIZE;
     }
 
-    // 💡 [핵심] 모바일 사파리 오디오 잠금 강제 해제!
-    // 유저가 화면을 '처음' 터치할 때, 모든 오디오를 볼륨 0으로 잠깐 틀었다가 끕니다.
+    // 💡 [핵심] 모바일 사파리 오디오 잠금 '조용하게' 강제 해제!
     function unlockAllAudios() {
         const allAudios = [
             bgmAudio, gameOverAudio, cheerAudio, ouchAudio, 
@@ -312,19 +311,25 @@
         ];
         
         allAudios.forEach(audio => {
-            audio.volume = 0; // 소리 안 나게
-            audio.play().then(() => {
-                audio.pause();
-                audio.currentTime = 0;
-                audio.volume = 1; // 다시 볼륨 원상복구
-            }).catch(e => {});
+            // 💥 1. 아이폰은 볼륨0이 안 먹히므로 아예 '음소거(Muted)'를 시켜버립니다!
+            audio.muted = true; 
+            
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    // 💥 2. 브라우저가 "어? 터치해서 틀었네?" 하고 허락하면, 재빨리 음소거를 풀어줍니다.
+                    audio.muted = false; 
+                }).catch(e => {});
+            }
         });
 
         // 한 번 해제했으면 이벤트 리스너 제거
         document.removeEventListener('touchstart', unlockAllAudios);
         document.removeEventListener('mousedown', unlockAllAudios);
         document.removeEventListener('keydown', unlockAllAudios);
-        console.log("모든 오디오 잠금 해제 완료!");
+        console.log("완벽하게 조용한 오디오 잠금 해제 완료!");
     }
 
     document.addEventListener('touchstart', unlockAllAudios, { once: true });
