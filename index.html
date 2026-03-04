@@ -1065,14 +1065,39 @@
     }
 
     const warningGeo = new THREE.ConeGeometry(0.5, 1.5, 4); warningGeo.rotateX(Math.PI); const warningMat = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 1 });
+    
+    // 💡 렉 방지 최적화: DANGER 텍스처를 전역 변수로 딱 한 번만 만듭니다!
+    const dangerCanvas = document.createElement('canvas'); 
+    dangerCanvas.width = 256; dangerCanvas.height = 64; 
+    const dangerCtx = dangerCanvas.getContext('2d'); 
+    dangerCtx.font = 'bold 40px "Press Start 2P", sans-serif'; 
+    dangerCtx.fillStyle = '#ff0000'; 
+    dangerCtx.textAlign = 'center'; 
+    dangerCtx.textBaseline = 'middle'; 
+    dangerCtx.fillText('DANGER!', dangerCanvas.width / 2, dangerCanvas.height / 2);
+    const dangerTexture = new THREE.CanvasTexture(dangerCanvas); 
+    const dangerMaterial = new THREE.SpriteMaterial({ map: dangerTexture, transparent: true });
+
     function createDangerLabelSprite() {
-        const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); canvas.width = 256; canvas.height = 64; ctx.font = 'bold 40px "Press Start 2P", sans-serif'; ctx.fillStyle = '#ff0000'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('DANGER!', canvas.width / 2, canvas.height / 2);
-        const texture = new THREE.CanvasTexture(canvas); const material = new THREE.SpriteMaterial({ map: texture, transparent: true }); const sprite = new THREE.Sprite(material); sprite.scale.set(4, 1, 1); return sprite;
+        // 💡 매번 새로 그리지 않고, 이미 만든 dangerMaterial을 재사용합니다.
+        const sprite = new THREE.Sprite(dangerMaterial); 
+        sprite.scale.set(4, 1, 1); 
+        return sprite;
     }
 
     function createWarningArrow(x, z) {
-        const arrowMesh = new THREE.Mesh(warningGeo, warningMat.clone()); arrowMesh.position.set(x, GROUND_Y + 4, z - 15); arrowMesh.userData = { type: 'warning' }; scene.add(arrowMesh); objects.push(arrowMesh);
-        const dangerSprite = createDangerLabelSprite(); dangerSprite.position.set(x, GROUND_Y + 5.5, z - 35); dangerSprite.userData = { type: 'warningText', parentArrow: arrowMesh }; scene.add(dangerSprite); objects.push(dangerSprite);
+        // 💡 warningMat.clone() 대신 원본 재질을 그대로 재사용합니다.
+        const arrowMesh = new THREE.Mesh(warningGeo, warningMat); 
+        arrowMesh.position.set(x, GROUND_Y + 4, z - 15); 
+        arrowMesh.userData = { type: 'warning' }; 
+        scene.add(arrowMesh); 
+        objects.push(arrowMesh);
+        
+        const dangerSprite = createDangerLabelSprite(); 
+        dangerSprite.position.set(x, GROUND_Y + 5.5, z - 35); 
+        dangerSprite.userData = { type: 'warningText', parentArrow: arrowMesh }; 
+        scene.add(dangerSprite); 
+        objects.push(dangerSprite);
     }
 
     function spawnObject(forcedZ = null) {
