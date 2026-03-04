@@ -258,28 +258,44 @@
     const ouchAudio = document.getElementById('ouchAudio');
 
    // 💡 1. 모바일 렉 완전 해결: 게임 전용 초저지연 사운드 엔진(Web Audio API)
+    // 브라우저 호환성을 위해 다양한 형태의 오디오 컨텍스트를 시도합니다.
     const AudioContext = window.AudioContext || window.webkitAudioContext;
-    const audioCtx = new AudioContext();
+    let audioCtx = null;
     let coinAudioBuffer = null;
     let lastCoinTime = 0;
 
-    // 동전 사운드를 핸드폰 메모리(RAM)에 미리 구워버립니다 (로딩 딜레이 0초)
-    fetch('coin sound.mp3')
-        .then(response => response.arrayBuffer())
-        .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
-        .then(audioBuffer => {
-            coinAudioBuffer = audioBuffer;
-        })
-        .catch(e => console.log("사운드 로드 에러"));
+    // 게임 시작 시(최초 터치 시)에만 오디오 엔진을 깨우는 강력한 함수
+    function initAudioEngine() {
+        if (!audioCtx) {
+            audioCtx = new AudioContext();
+        }
+        
+        // 정지된 상태라면 강제로 깨웁니다.
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume().then(() => {
+                console.log("오디오 엔진 성공적으로 기상!");
+            });
+        }
 
-    // 애플(아이폰)의 깐깐한 오디오 정책을 뚫기 위한 잠금 해제 코드
-    const unlockAudio = () => {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        document.removeEventListener('touchstart', unlockAudio);
-        document.removeEventListener('keydown', unlockAudio);
-    };
-    document.addEventListener('touchstart', unlockAudio);
-    document.addEventListener('keydown', unlockAudio);
+        // 버퍼가 비어있으면 그때 소리 파일을 불러옵니다.
+        if (!coinAudioBuffer) {
+            fetch('coin sound.mp3')
+                .then(response => response.arrayBuffer())
+                .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
+                .then(audioBuffer => {
+                    coinAudioBuffer = audioBuffer;
+                })
+                .catch(e => console.log("사운드 로드 에러:", e));
+        }
+
+        // 엔진이 성공적으로 켜졌으면 이벤트 리스너를 지워서 불필요한 연산을 줄입니다.
+        document.removeEventListener('touchstart', initAudioEngine);
+        document.removeEventListener('mousedown', initAudioEngine);
+    }
+
+    // 모바일 터치나 PC 클릭 시 오디오 엔진을 강제로 초기화!
+    document.addEventListener('touchstart', initAudioEngine, { once: true });
+    document.addEventListener('mousedown', initAudioEngine, { once: true });
 
     // 렉 0%로 동전 소리를 재생하는 함수
     function playCoinSound() {
@@ -287,7 +303,8 @@
         if (now - lastCoinTime < 50) return; // 0.05초 연타 방지
         lastCoinTime = now;
 
-        if (coinAudioBuffer && audioCtx.state === 'running') {
+        // 엔진이 켜져 있고 파일이 로드되었을 때만 실행
+        if (audioCtx && audioCtx.state === 'running' && coinAudioBuffer) {
             const source = audioCtx.createBufferSource();
             source.buffer = coinAudioBuffer;
             source.connect(audioCtx.destination);
