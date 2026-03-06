@@ -50,7 +50,7 @@
         #ui-container { position: absolute; top: 20px; left: 20px; z-index: 10; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
         #score-box { display: flex; align-items: center; gap: 15px; }
         #score-box img { height: 100px; image-rendering: pixelated; }
-        #score { color: #e6c55c; font-family: 'Runtoe', 'Press Start 2P', sans-serif; font-size: 56px; text-shadow: 2px 2px 0px #000000; }
+        #score { color: #ffe500; font-family: 'Runtoe', 'Press Start 2P', sans-serif; font-size: 56px; text-shadow: 2px 2px 0px #ffe500, 0 0 10px #ffe500, 0 0 10px #ffe500; }
 
         #gauge-container { width: 0px; height: 0px; background-color: rgba(255, 255, 255, 0.2); border: none; border-radius: 8px; overflow: hidden; box-shadow: none; margin-top: -15px; }
         #gauge-fill { width: 0%; height: 100%; background-color: #00ffff; box-shadow: 0 0 10px #00ffff; transition: width 0.2s ease-out; }
@@ -61,13 +61,16 @@
         #gameOverMsg { display: none; white-space: nowrap; }
         
         @keyframes bonusBlink {
-            0% { transform: translate(-50%, -50%) scale(1); text-shadow: 4px 4px 0px #ff00ff, 0 0 20px #ff00ff; }
-            50% { transform: translate(-50%, -50%) scale(1.1); text-shadow: -4px -4px 0px #00ffff, 0 0 30px #00ffff; color: #fff;}
-            100% { transform: translate(-50%, -50%) scale(1); text-shadow: 4px 4px 0px #ff00ff, 0 0 20px #ff00ff; }
+            0% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(4px 4px 0px #ff00ff) drop-shadow(0 0 20px #ff00ff); }
+            50% { transform: translate(-50%, -50%) scale(1.1); filter: drop-shadow(-4px -4px 0px #00ffff) drop-shadow(0 0 30px #00ffff); }
+            100% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(4px 4px 0px #ff00ff) drop-shadow(0 0 20px #ff00ff); }
         }
         
-        #bonusMsg { display: none; color: #ffcc00; font-family: 'Runtoe', sans-serif; font-size: 70px; position: absolute; top: 30%; left: 50%; text-align: center; z-index: 20; animation: bonusBlink 0.5s infinite; }
-        #startMsg { display: none; color: #ffcc00; font-family: 'Runtoe', sans-serif; font-size: 60px; text-shadow: 2px 2px 0px #000, 0 0 20px #ff00ff; animation: promptBlink 0.5s infinite; z-index: 50; width: 100%; position: absolute; top: 40%; left: 50%; text-align: center; transform: translate(-50%, -50%); }
+        #bonusMsg { display: none; position: absolute; top: 30%; left: 50%; z-index: 20; animation: bonusBlink 0.5s infinite; width: 80%; max-width: 700px; }
+        #bonusMsg img { width: 100%; height: auto; display: block; margin: 0 auto; }
+        
+        #startMsg { display: none; position: absolute; top: 20%; left: 51%; z-index: 50; animation: promptBlink 0.5s infinite; width: 110%; max-width: 700px; transform: translate(-50%, -50%); }
+        #startMsg img { width: 100%; height: auto; display: block; margin: 0 auto; filter: drop-shadow(2px 2px 0px #000) drop-shadow(0 0 10px #ff00ff); }
 
         @keyframes comboPop {
             0% { transform: scale(1) rotate(-5deg); color: #ffff00; }
@@ -105,7 +108,7 @@
 
         #mobileCharSelectUI { position: absolute; bottom: 24%; left: 50%; transform: translateX(-50%); display: none; width: 100%; justify-content: center; gap: 40px; align-items: center; z-index: 30; }
         .m-btn { color: #ffff00; font-family: 'Runtoe', sans-serif; font-size: 50px; text-shadow: 2px 2px 0px #ff00ff; cursor: pointer; padding: 15px; user-select: none; opacity: 0; }
-        #pcCharSelectUI { position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%); color: #ffff00; font-family: 'Runtoe', sans-serif; font-size: 40px; text-shadow: 2px 2px 0px #ff00ff; animation: promptBlink 1s infinite; text-align: center; z-index: 10; width: 100%; }
+        #pcCharSelectUI { position: absolute; bottom: 0%; left: 50%; transform: translateX(-50%); color: #ffff00; font-family: 'Runtoe', sans-serif; font-size: 40px; text-shadow: 2px 2px 0px #ff00ff; animation: promptBlink 1s infinite; text-align: center; z-index: 10; width: 100%; }
 
         #tapToStart { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-family: 'Runtoe', sans-serif; font-size: 50px; text-shadow: 2px 2px 0px #ff00ff; z-index: 25; animation: promptBlink 1s infinite; white-space: nowrap; pointer-events: none;}
 
@@ -137,8 +140,8 @@
         /* 📱 모바일 전용 UI & 폰트 크기 조정 */
         body.mobile-mode #score { font-size: 36px; }
         body.mobile-mode #score-box img { height: 60px; }
-        body.mobile-mode #bonusMsg { font-size: 45px; width: 100%; top: 35%; }
-        body.mobile-mode #startMsg { font-size: 40px; }
+        body.mobile-mode #bonusMsg { width: 90%; top: 35%; }
+        body.mobile-mode #startMsg { width: 85%; }
         body.mobile-mode #comboMsg { font-size: 40px; top: 15%; right: 5%; }
         body.mobile-mode .tut-text { font-size: 26px; }
         body.mobile-mode .m-btn { font-size: 35px; padding: 10px; }
@@ -155,6 +158,16 @@
             50% { opacity: 0.5; text-shadow: 2px 2px 0px #000, 0 0 20px #00ffff; }
             100% { opacity: 1; text-shadow: 2px 2px 0px #000, 0 0 10px #ff00ff; }
         }
+
+        #credit-btn { position: absolute; bottom: 20px; right: 20px; width: 80px; height: auto; cursor: pointer; z-index: 40; transition: transform 0.2s; }
+        #credit-btn:hover { transform: scale(1.1); }
+        body.mobile-mode #credit-btn { width: 60px; bottom: 15px; right: 15px; }
+        
+        #credit-modal { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); z-index: 200; flex-direction: column; justify-content: center; align-items: center; }
+        #credit-modal img { max-width: 90%; max-height: 80%; object-fit: contain; }
+        
+        #credit-close-txt { position: absolute; bottom: 13%; left: 50%; transform: translateX(-50%); color: #fff; font-family: 'Runtoe', sans-serif; font-size: 40px; animation: promptBlink 1s infinite; text-shadow: 2px 2px 0px #ff00ff; cursor: pointer; white-space: nowrap; }
+        body.mobile-mode #credit-close-txt { font-size: 26px; bottom: 8%; }
     </style>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -190,8 +203,8 @@
             <span id="gameover-subtext" style="font-size: 0px; color:#fff;">PRESS 'R' TO SELECT CHARACTER</span>
         </div>
         
-        <div id="bonusMsg">POP THAT BODY LIKE!</div>
-        <div id="startMsg">GET COINS TO POP!</div>
+        <div id="bonusMsg"><img src="POP THAT.png" alt="POP THAT BODY LIKE!"></div>
+        <div id="startMsg"><img src="GET COINS TO POP.png" alt="GET COINS TO POP!"></div>
         <div id="comboMsg">2COMBO!</div>
         
         <video id="wastedVideo" src="WASTED.mp4" playsinline muted style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 90; display: none;"></video>
@@ -220,12 +233,16 @@
                 <div class="char-card" data-char="6"></div>
             </div>
             
-            <div id="pcCharSelectUI">&lt;- -&gt; TO CHOOSE CHARACTER!</div>
+            <div id="pcCharSelectUI">
+                <img src="TO CHOOSE CHARACTER!.png" alt="Choose Character" style="width: 600px; image-rendering: pixelated;">
+            </div>
             <div id="mobileCharSelectUI">
                 <div class="m-btn" id="m-btn-left">&lt;-</div>
                 <div class="m-btn" id="m-btn-go">GO!</div>
                 <div class="m-btn" id="m-btn-right">-&gt;</div>
             </div>
+
+            <img id="credit-btn" src="CREDIT UI.png" alt="CREDIT">
         </div>
 
         <div id="tutorial-overlay">
@@ -238,6 +255,11 @@
 
         <div id="speed-effect"></div>
         <div id="crt-overlay"></div>
+        
+        <div id="credit-modal">
+            <img src="CREDIT.PNG" alt="CREDIT SCREEN">
+            <div id="credit-close-txt">TAP TO CLOSE</div>
+        </div>
     </div>
 
 <script>
@@ -1413,6 +1435,15 @@
         if (typeof composer !== 'undefined') composer.render(); else renderer.render(scene, camera);
     }
     animate();
+
+    const creditBtn = document.getElementById('credit-btn');
+    const creditModal = document.getElementById('credit-modal');
+    function openCredit(e) { e.preventDefault(); e.stopPropagation(); creditModal.style.display = 'flex'; }
+    creditBtn.addEventListener('click', openCredit);
+    creditBtn.addEventListener('touchstart', openCredit, {passive: false});
+    function closeCredit(e) { e.preventDefault(); e.stopPropagation(); creditModal.style.display = 'none'; }
+    creditModal.addEventListener('click', closeCredit);
+    creditModal.addEventListener('touchstart', closeCredit, {passive: false});
 </script>
 </body>
 </html>
